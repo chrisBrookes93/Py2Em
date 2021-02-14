@@ -1,24 +1,34 @@
 # Py2Em
-This is a Python library that emulates a Python2.7 interpreter, allowing you to execute Python code under 
-Python2.7, from Python3. This is achieved by embedding a Python2 interpreter into a Python3 C extension module.
+This is a Python library that emulates a Python2 interpreter, allowing you to execute Python code under 
+Python2, from Python3. This is achieved by embedding a Python2 interpreter into a Python3 C extension module.
+It currently only allows you to execute code under Python2, but not return anything (equivalent of an ```exec()```), 
+but this will be extended shortly to provide a rich API. At this point, this repo contains an MVP that one may 
+extend/tailor to their needs.
 
-The C extension module dynamically loads the Python2 Shared Object file into memory (using ```dlopen```, ```dlsym```, 
-```dlclose``` and then invokes the necessary functions to setup a Python interpreter. 
-It is done this way to get around an issue whereby you need to include ```Python.h``` from both version of Python, 
-leading to function name conflicts.
+## Why the need?
+You may be asking yourself... *"Why not just port your code to Python3?"*. This was designed with a specific use case in
+mind, specifically a project in which many hundred Python code snippets are executed dynamically. It would be a huge 
+task to port all of these to Python3, so Python2 emulation provides a suitable workaround (for now).
+
+## Implementation Details
+The C extension module dynamically loads the Python2 Shared Object file (```libpython2.so```) into memory (using ```dlopen```, ```dlsym```, 
+```dlclose```), and then invokes the necessary functions to setup a Python interpreter. 
+This is done to get around an issue whereby you need to include ```Python.h``` from both versions of Python, 
+leading to function name conflicts, and the linker simply links to the first shared library that's specified at compile time.
 
 ## Environment Requirements
-* Linux with Python2 & Python3 installed
+* Linux with Python2.7 & Python3 installed
 * GCC
 * ```libpython2.7.so``` present in the linker (ld) search path 
 
-### Specific Environment
+#### Specific Environment
 As this project is at the first MVP stage, this has only been setup and used in a very specific environment.
-In developing this I have experienced an ungodly amount of Seg Faults, and I have little confidence that this will work in many other situations.
-Therefore, I have provided an exact set of instructions to get this library working on the environment it was written on:
+In developing this I have experienced an ungodly amount of Seg Faults, and at this moment in time I have little 
+confidence that this will work in many other environments. Therefore, I have provided a set of instructions to
+ setup the exact environment this was written on, which should get you to a point where the library works reliably:
 * Install [Ubuntu 20.04.2 Desktop (amd64)](http://old-releases.ubuntu.com/releases/focal/ubuntu-20.04.2-desktop-amd64.iso)
 * Update packages via ```> sudo apt update```
-* Checkout this repo
+* Install ```git``` and checkout this repo
 * Install via ```Py2Em> sudo pip3 install .```
 * Test via ```Py2Em> python3.8 test.py```
 
