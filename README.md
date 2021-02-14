@@ -18,19 +18,19 @@ leading to function name conflicts, and the linker simply links to the first sha
 
 ## Environment Requirements
 * Linux with Python2.7 & Python3 installed
+* ```python2.7-dev``` installed (this creates ```libpython2.7.so```)
 * GCC
-* ```libpython2.7.so``` present in the linker (ld) search path 
 
 #### Specific Environment
-As this project is at the first MVP stage, this has only been setup and used in a very specific environment.
-In developing this I have experienced an ungodly amount of Seg Faults, and at this moment in time I have little 
-confidence that this will work in many other environments. Therefore, I have provided a set of instructions to
- setup the exact environment this was written on, which should get you to a point where the library works reliably:
+As this project is at the first MVP stage, and has only been setup and used in a very specific environment.
+At this moment in time I have limited confidence that this will work in many other environments. 
+Therefore, I have provided a set of instructions to setup the exact environment this was written on, which should get 
+you to a point where the library works reliably:
 * Install [Ubuntu 20.04.2 Desktop (amd64)](http://old-releases.ubuntu.com/releases/focal/ubuntu-20.04.2-desktop-amd64.iso)
 * Update packages via ```> sudo apt update```
-* Install ```git``` and checkout this repo
-* Install via ```Py2Em> sudo pip3 install .```
-* Test via ```Py2Em> python3.8 test.py```
+* Install dependencies ```> sudo apt install git python2.7 python2.7-dev python3-pip```
+* Checkout and install via ```Py2Em> sudo pip3 install .```
+* Test via ```Py2Em> python3.8 test.py```. You should see the same output as in the Usage section below.
 
 ## Usage
 The library exposes three functions:
