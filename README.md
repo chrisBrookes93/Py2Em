@@ -18,7 +18,7 @@ leading to function name conflicts, and the linker simply links to the first sha
 
 ## Environment Requirements
 * Linux with Python2.7 & Python3 installed
-* ```python2.7-dev``` installed (this creates ```libpython2.7.so```)
+* ```libpython2.7-dev``` installed (this creates ```libpython2.7.so```)
 * GCC
 
 #### Specific Environment
@@ -28,7 +28,7 @@ Therefore, I have provided a set of instructions to setup the exact environment 
 you to a point where the library works reliably:
 * Install [Ubuntu 20.04.2 Desktop (amd64)](http://old-releases.ubuntu.com/releases/focal/ubuntu-20.04.2-desktop-amd64.iso)
 * Update packages via ```> sudo apt update```
-* Install dependencies ```> sudo apt install git python2.7 python2.7-dev python3-pip```
+* Install dependencies ```> sudo apt install git python2.7 libpython2.7-dev python3-pip```
 * Checkout and install via ```Py2Em> sudo pip3 install .```
 * Test via ```Py2Em> python3.8 test.py```. You should see the same output as in the Usage section below.
 

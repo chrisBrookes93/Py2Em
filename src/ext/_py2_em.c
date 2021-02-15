@@ -121,6 +121,6 @@ static PyModuleDef Py2Em = {
 	mainMethods
 };
 
-PyMODINIT_FUNC PyInit_Py2Em(void) {
+PyMODINIT_FUNC PyInit__py2_em(void) {
 	return PyModule_Create(&Py2Em);
 }
