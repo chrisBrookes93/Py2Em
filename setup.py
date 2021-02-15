@@ -24,7 +24,7 @@ setup(
 	],
 	packages=find_packages(where='src'),
 	package_dir={'': 'src'},
-	extras_requires={
+	extras_require={
 		'dev': ['pytest==6.2.2']
 	}
 	)
