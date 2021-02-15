@@ -3,18 +3,16 @@ import _py2_em
 
 class Py2Emulator:
 
-    def __enter__(self, libpython_path='libpython2.7.so', prog_name=None, python_home=None):
+    def __enter__(self, libpython_path='libpython2.7.so'):
         """
         Initializes the Python2 Emulator
 
-        :param libpython_path: Path to the Python Library .so file
+        :param libpython_path: Path to the Python Library .so file. If not a full path the string must be resolvable on
+        the LD search path
         :type libpython_path: str
-        :param prog_name: Optional name of the program that is passed into Py_SetProgramName()
-        :type prog_name: str
-        :param python_home: Optional python home directory. This is passed into Py_SetPythonHome()
-        :type python_home: str
         """
-        Py2Emulator.initialize(libpython_path, prog_name, python_home)
+        Py2Emulator.initialize(libpython_path)
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
@@ -22,23 +20,28 @@ class Py2Emulator:
         :param exc_type:
         :param exc_val:
         :param exc_tb:
-        :return:
         """
         Py2Emulator.finalize()
 
-    @staticmethod
-    def initialize(libpython_path='libpython2.7.so', prog_name=None, python_home=None):
+    def exec(self, eval_str):
         """
-       Initializes the Python2 Emulator
+        Not static version of py2_exec, for if you're using this class as a context manager
 
-       :param libpython_path: Path to the Python Library .so file
-       :type libpython_path: str
-       :param prog_name: Optional name of the program that is passed into Py_SetProgramName()
-       :type prog_name: str
-       :param python_home: Optional python home directory. This is passed into Py_SetPythonHome()
-       :type python_home: str
-       """
-        _py2_em.Init()
+        :param eval_str: Python string to execute
+        :type eval_str: str
+        """
+        _py2_em.Py2_Exec(eval_str)
+
+    @staticmethod
+    def initialize(libpython_path='libpython2.7.so'):
+        """
+        Initializes the Python2 Emulator
+
+        :param libpython_path: Path to the Python Library .so file. If not a full path the string must be resolvable on
+        the LD search path
+        :type libpython_path: str
+        """
+        _py2_em.Initialize(libpython_path)
 
     @staticmethod
     def py2_exec(eval_str):

@@ -1,86 +1,137 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <dlfcn.h>
 #include <Python.h>
 
-
+/**
+* Typedefs for the functions invoked in the libpython2.7.so file
+**/
 typedef void (*PyInitializeFunc)(void);
 typedef void (*PyFinalizeFunc)(void);
 typedef int (*PyRun_SimpleStringFunc)(const char *);
 
-void *glob_py_handle;
+/**
+* Handle to the libpython2.7.so file
+**/
+void *globPyHandle;
 
 
+/**
+* Load the libpython27.so file into memory via dlopen().
+*
+* @param pFilePath Name or filepath. The name must be resolvable on the LD search path
+* @return Handle to the so file.
+**/
 void *LoadPython27(const char *pFilePath)
 {
-	printf("Loading Python Binary...");
-	// This has to be DEEPBIND because within our Python3 extension there are already functions like Py_Initialize(). 
+	// This has to be DEEPBIND because within our Python3 extension there are already functions like Py_Initialize().
 	// In order to make sure we call the functions in the Py2 .so file, we need to specify RTLD_DEEPBIND to place the
 	// lookup scope ahead of the globals
-	void *py_handle;
-	py_handle = dlopen(pFilePath, RTLD_NOW | RTLD_DEEPBIND);
-	if (!py_handle)
+	void *pyHandle;
+	pyHandle = dlopen(pFilePath, RTLD_NOW | RTLD_DEEPBIND);
+	if (!pyHandle)
 	{
 		PyErr_SetString(PyExc_RuntimeError, dlerror());
-		fputs(dlerror(), stderr);
 		return NULL;
 	}
-	printf("Complete\n");
-	return py_handle;
+	return pyHandle;
 }
 
 
-void InitializePython(void *py_handle)
+/**
+* Invoke Py_Initialize() from the loaded libpython SO file
+*
+* @param pyHandle Handle to the libpython SO file
+**/
+bool InitializePython(void *pyHandle)
 {
-	printf("Initializing Python...\n");
+    bool retVal = false;
+
 	PyInitializeFunc pyInitializePtr;
-	pyInitializePtr = (PyInitializeFunc)dlsym(py_handle, "Py_Initialize");
+	pyInitializePtr = (PyInitializeFunc)dlsym(pyHandle, "Py_Initialize");
 	char* error;
 	error = dlerror();
 
 	if (error != NULL || !pyInitializePtr)
 	{
-		printf("ERROR: %s \n", error);
-		return;
+		PyErr_SetString(PyExc_RuntimeError, error);
+		return retVal;
 	}
 	pyInitializePtr();
 
-	if (error != NULL || !pyInitializePtr)
+    error = dlerror();
+	if (error != NULL)
 	{
-		printf("ERROR: %s \n", error);
-		return;
+		PyErr_SetString(PyExc_RuntimeError, error);
+		return retVal;
 	}
-	printf("Complete\n");
+	retVal = true;
+	return retVal;
 }
 
-void FinalizePython(void *py_handle)
+/**
+* Invoke Py_Finalize() from the loaded libpython SO file
+*
+* @param pyHandle Handle to the libpython SO file
+**/
+void FinalizePython(void *pyHandle)
 {
 	PyFinalizeFunc pyFinalizePtr;
-	pyFinalizePtr = (PyFinalizeFunc)dlsym(py_handle, "Py_Finalize");
+	pyFinalizePtr = (PyFinalizeFunc)dlsym(pyHandle, "Py_Finalize");
 	pyFinalizePtr();
 }
 
-
-void RunString(void *py_handle, char *command)
+/**
+* Invoke PyRun_SimpleString() from the loaded libpython SO file
+*
+* @param pyHandle Handle to the libpython SO file
+* @param command Python command to execute
+**/
+void RunString(void *pyHandle, char *command)
 {
 	PyRun_SimpleStringFunc pyRunSimpleStringPtr;
-	pyRunSimpleStringPtr = (PyRun_SimpleStringFunc)dlsym(py_handle, "PyRun_SimpleString");
+	pyRunSimpleStringPtr = (PyRun_SimpleStringFunc)dlsym(pyHandle, "PyRun_SimpleString");
 	pyRunSimpleStringPtr(command);
 }
 
-static PyObject* Init(PyObject* self, PyObject* args)
+/**
+* Initialize the Python2 Interpreter. This is done by dynamically loading the shared library and invoking Py_Initialize()
+*
+* @param self Unused
+* @param args Argument dictionary
+**/
+static PyObject* Initialize(PyObject* self, PyObject* args)
 {
-	glob_py_handle = LoadPython27("libpython2.7.so");
-	InitializePython(glob_py_handle);
+    char *so_filepath;
+	if (!PyArg_ParseTuple(args, "s", &so_filepath))
+	{
+		PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
+		return NULL;
+	}
+
+	globPyHandle = LoadPython27(so_filepath);
+	if (!globPyHandle)
+	{
+	    // LoadPython27() should have set the error
+	    return NULL;
+	}
+	InitializePython(globPyHandle);
 	return Py_BuildValue("");
 }
 
+/**
+* Execute a Python string in the Python2 interpreter
+*
+* @param self Unused
+* @param args Argument tuple containing the command to execute
+**/
 static PyObject* Py2_Exec(PyObject* self, PyObject* args)
 {
 	char *command;
-	if (!glob_py_handle)
+	if (!globPyHandle)
 	{
-		PyErr_SetString(PyExc_RuntimeError, "Python Interpreter is not Initialized. You need to call Init() first.");
+		PyErr_SetString(PyExc_RuntimeError, "Python Interpreter is not initialized.");
 		return NULL;
 	}
 
@@ -89,26 +140,36 @@ static PyObject* Py2_Exec(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
 		return NULL;
 	}
-	RunString(glob_py_handle, command);
+
+	RunString(globPyHandle, command);
 	return Py_BuildValue("");
 }
 
+/**
+* Finalize the Python2 Interpreter. This is done by invoking Py_Finalize() and closing the dynamically loaded SO file
+*
+* @param self Unused
+* @param args Unused
+**/
 static PyObject* Finalize(PyObject* self, PyObject* args)
 {
-	if (!glob_py_handle)
+	if (!globPyHandle)
 	{
 		PyErr_SetString(PyExc_RuntimeError, "Python Interpreter is not Initialized.");
 		return NULL;
 	}
 
-	FinalizePython(glob_py_handle);
-	dlclose(glob_py_handle);
-	glob_py_handle = NULL;
+	FinalizePython(globPyHandle);
+	dlclose(globPyHandle);
+	globPyHandle = NULL;
 	return Py_BuildValue("");
 }
 
+/**
+* Start of the Python Extension boilerplate code
+**/
 static PyMethodDef mainMethods[] = {
-	{"Init", Init, METH_VARARGS, "Initialize the Python2.7 Interpreter"},
+	{"Initialize", Initialize, METH_VARARGS, "Initialize the Python2.7 Interpreter"},
 	{"Py2_Exec", Py2_Exec, METH_VARARGS, "Execute a string in the Python2.7 interpreter"},
 	{"Finalize", Finalize, METH_VARARGS, "Close the Python2.7 interpreter"},
 	{NULL, NULL, 0, NULL}
@@ -124,3 +185,7 @@ static PyModuleDef Py2Em = {
 PyMODINIT_FUNC PyInit__py2_em(void) {
 	return PyModule_Create(&Py2Em);
 }
+
+/**
+* End of the Python Extension boilerplate code
+**/
