@@ -14,10 +14,10 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install git python2.7 libpython2.7-dev python3-pip
+          sudo apt install python2.7 libpython2.7-dev python3-pip
       - name: Install the Package
         run: pip3 install .[dev]
       - name: Run the unit tests
-        run: pytest tests/
+        run: python3 -m pytest tests/
       - name: Run the example script
         run: python3 utils/example.py
