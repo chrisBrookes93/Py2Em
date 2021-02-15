@@ -16,7 +16,6 @@ typedef int (*PyRun_SimpleStringFunc)(const char *);
 **/
 void *globPyHandle;
 
-
 /**
 * Load the libpython27.so file into memory via dlopen().
 *
@@ -37,7 +36,6 @@ void *LoadPython27(const char *pFilePath)
 	}
 	return pyHandle;
 }
-
 
 /**
 * Invoke Py_Initialize() from the loaded libpython SO file
@@ -116,7 +114,11 @@ static PyObject* Initialize(PyObject* self, PyObject* args)
 	    // LoadPython27() should have set the error
 	    return NULL;
 	}
-	InitializePython(globPyHandle);
+	if (!InitializePython(globPyHandle))
+	{
+		// InitializePython() should have set the error
+	    return NULL;
+	}
 	return Py_BuildValue("");
 }
 

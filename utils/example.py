@@ -22,5 +22,5 @@ print('--> py2_em interpreter\'s answer to "10/3" is: ')
 Py2Emulator.py2_exec('print(10 / 3)')
 print()
 
-print('Finalizing py2_em')
+print('--> Finalizing py2_em')
 Py2Emulator.finalize()
