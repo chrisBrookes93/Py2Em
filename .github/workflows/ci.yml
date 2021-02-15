@@ -18,6 +18,6 @@ jobs:
       - name: Install the Package
         run: pip3 install .[dev]
       - name: Run the unit tests
-        run: python3 -m pytest tests/
+        run: python3 -m pytest test/
       - name: Run the example script
         run: python3 utils/example.py
