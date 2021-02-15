@@ -23,5 +23,8 @@ setup(
 		'Operating System :: POSIX :: Linux'
 	],
 	packages=find_packages(where='src'),
-	package_dir={'': 'src'}
+	package_dir={'': 'src'},
+	extras_requires={
+		'dev': ['pytest==6.2.2']
+	}
 	)
