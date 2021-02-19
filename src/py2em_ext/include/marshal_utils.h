@@ -3,10 +3,17 @@
 
 #include <dlfcn.h>
 #include <Python.h>
+#include <stdbool.h>
 
 
-void *LoadPython27(const char *pFilePath);
-void *GetPy2Func(void *pyHandle, const char *pSymbolName);
+bool LoadPython27(const char *pFilePath);
+void *GetPy2Func(const char *pSymbolName);
+bool ClosePython27();
 
+
+/**
+* Handle to the libpython2.7.so file
+**/
+void *pGlobPyHandle;
 
 #endif // MARSHAL_UTILS_h__

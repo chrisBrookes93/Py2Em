@@ -5,102 +5,72 @@
 
 #include "marshal_datatypes.h"
 #include "marshal_utils.h"
-
-
-/**
-* Typedefs for the functions invoked in the libpython2.7.so file
-**/
-typedef void (*PyInitializeFunc)(void);
-typedef void (*PyFinalizeFunc)(void);
-typedef void (*PyErr_PrintFunc)(void);
-typedef PyObject* (*PyDict_NewFunc)(void);
-
-// For converting Py2 datatypes -> C datatypes
-
-
-
-
-typedef PyObject* (*PyRun_StringFunc)(const char *, int start, PyObject *globals, PyObject *locals);
-
-/**
-* Handle to the libpython2.7.so file
-**/
-void *globPyHandle;
-
-
-
-
-/**
-* Invoke Py_Initialize() from the loaded libpython SO file
-*
-* @param pyHandle Handle to the libpython SO file
-**/
-bool InitializePython(void *pyHandle)
-{
-    bool retVal = false;
-
-	PyInitializeFunc pyInitializePtr;
-	pyInitializePtr = (PyInitializeFunc)dlsym(pyHandle, "Py_Initialize");
-	char* error;
-	error = dlerror();
-
-	if (error != NULL || !pyInitializePtr)
-	{
-		PyErr_SetString(PyExc_RuntimeError, error);
-		return retVal;
-	}
-	pyInitializePtr();
-
-    error = dlerror();
-	if (error != NULL)
-	{
-		PyErr_SetString(PyExc_RuntimeError, error);
-		return retVal;
-	}
-	retVal = true;
-	return retVal;
-}
-
-/**
-* Invoke Py_Finalize() from the loaded libpython SO file
-*
-* @param pyHandle Handle to the libpython SO file
-**/
-void FinalizePython(void *pyHandle)
-{
-	PyFinalizeFunc pyFinalizePtr;
-	pyFinalizePtr = (PyFinalizeFunc)dlsym(pyHandle, "Py_Finalize");
-	pyFinalizePtr();
-}
-
-
-
+#include "py2em_extension.h"
 
 
 /**
 * Invoke PyRun_SimpleString() from the loaded libpython SO file
 *
-* @param pyHandle Handle to the libpython SO file
 * @param command Python command to execute
 **/
-PyObject *RunString(void *pyHandle, const char *command, int start, PyObject *globals, PyObject *locals)
+PyObject *RunString(const char *command, int start)
 {
-	//PyObject *main_module = PyImport_AddModule("__main__");
-	//PyObject *global_dict = PyModule_GetDict(main_module);
-	PyDict_NewFunc pyDictNewptr;
-	pyDictNewptr = (PyDict_NewFunc)dlsym(pyHandle, "PyDict_New");
-	PyObject* globs = pyDictNewptr();
-	PyObject* locs = pyDictNewptr();
+	printf("Enter RunString\n");
 
+	PyDict_NewFunc pPyDictNew;
+	PyRun_StringFunc pPyRunString;
+	PyImport_AddModuleFunc pPyImportAddModule;
+	PyModule_GetDictFunc pPyModuleGetDict;
+	pyDictNewptr = (PyDict_NewFunc)GetPy2Func("PyDict_New");
+	pyRunStringPtr = (PyRun_StringFunc)GetPy2Func("PyRun_String");
+	pPyImportAddModule = (PyImport_AddModuleFunc)GetPy2Func("PyImport_AddModule");
 
-	PyRun_StringFunc pyRunStringPtr;
-	pyRunStringPtr = (PyRun_StringFunc)dlsym(pyHandle, "PyRun_String");
-	PyObject* res = pyRunStringPtr(command, start, globs, locs);
+	if (!pPyDictNew || !pPyRunString || !pPyImportAddModule || pPyModuleGetDict)
+	{
+		return NULL;
+	}
 
-	return MarshalObjectPy2ToPy3(pyHandle, res);
+	/*
+	PyObject *m, *d, *v;
+    m = PyImport_AddModule("__main__");
+    if (m == NULL)
+        return -1;
+    d = PyModule_GetDict(m);
+    v = PyRun_StringFlags(command, Py_file_input, d, d, flags);
+
+	*/
+
+	PyObject* pGlobals = pyDictNewptr();
+	PyObject* pLocals = pyDictNewptr();
+
+	PyObject* pRunStrRes = pyRunStringPtr(command, start, pGlobals, pLocals);
+	printf("Finished PyRun_String\n");
+
+	// TODO - dispose of dictionaries
+	// TODO - dispose of pRunStrRes
+
+	if (!pRunStrRes)
+	{
+		PyErr_PrintFunc pPyErrPrintFunc;
+		pPyErrPrintFunc = (PyErr_PrintFunc)GetPy2Func("PyErr_Print");
+		if (!pPyErrPrintFunc)
+		{
+			return NULL;
+		}
+		pPyErrPrintFunc();
+		return NULL;
+	}
+
+	if (start == Py_eval_input)
+	{
+		return MarshalObjectPy2ToPy3(pRunStrRes);
+	}
+	else
+	{
+		printf("Returning NULL\n");
+		return NULL;
+	}
 }
-
-
 
 /**
 * Initialize the Python2 Interpreter. This is done by dynamically loading the shared library and invoking Py_Initialize()
@@ -116,18 +86,23 @@ static PyObject* Initialize(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
 		return NULL;
 	}
-
-	globPyHandle = LoadPython27(so_filepath);
-	if (!globPyHandle)
+	;
+	if (!LoadPython27(so_filepath))
 	{
 	    // LoadPython27() should have set the error
 	    return NULL;
 	}
-	if (!InitializePython(globPyHandle))
+
+	PyInitializeFunc pyInitializePtr;
+	pyInitializePtr = (PyInitializeFunc)GetPy2Func("Py_Initialize");
+	if (!pyInitializePtr)
 	{
-		// InitializePython() should have set the error
-	    return NULL;
+		// GetPy2Func() will have set the error
+		return NULL;
 	}
+
+	pyInitializePtr();
+	
 	return Py_BuildValue("");
 }
 
@@ -139,13 +114,9 @@ static PyObject* Initialize(PyObject* self, PyObject* args)
 **/
 static PyObject* Py2_Exec(PyObject* self, PyObject* args)
 {
-
 	char *command;
-	if (!globPyHandle)
-	{
-		PyErr_SetString(PyExc_RuntimeError, "Python Interpreter is not Initialized.");
-		return NULL;
-	}
+
+	// TODO - check whether we are initialized!
 
 	if (!PyArg_ParseTuple(args, "s", &command))
 	{
@@ -153,13 +124,30 @@ static PyObject* Py2_Exec(PyObject* self, PyObject* args)
 		return NULL;
 	}
 
-	PyObject *global_dict = PyDict_New();
-	PyObject *local_dict = PyDict_New();
-	PyObject * res = RunString(globPyHandle, command, Py_eval_input, global_dict, local_dict);
-	//printf("%d", res);
+	RunString(command, Py_file_input);
 
-	//Py_DECREF(global_dict);
-	//Py_DECREF(local_dict);
+	return Py_BuildValue("");
+}
+
+/**
+* Evaluate a Python string in the Python2 interpreter
+*
+* @param self Unused
+* @param args Argument tuple containing the command to evaluate
+**/
+static PyObject* Py2_Eval(PyObject* self, PyObject* args)
+{
+	char *command;
+
+	// TODO - check whether we are initialized!
+
+	if (!PyArg_ParseTuple(args, "s", &command))
+	{
+		PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
+		return NULL;
+	}
+
+	PyObject * res = RunString(command, Py_eval_input);
 
 	return res;
 }
@@ -172,15 +160,21 @@ static PyObject* Py2_Exec(PyObject* self, PyObject* args)
 **/
 static PyObject* Finalize(PyObject* self, PyObject* args)
 {
-	if (!globPyHandle)
+	PyFinalizeFunc pyFinalizePtr;
+	pyFinalizePtr = (PyFinalizeFunc)GetPy2Func("Py_Finalize");
+	if (!pyFinalizePtr)
 	{
-		PyErr_SetString(PyExc_RuntimeError, "Python Interpreter is not Initialized.");
+		// GetPy2Func() will have set the error
 		return NULL;
 	}
 
-	FinalizePython(globPyHandle);
-	dlclose(globPyHandle);
-	globPyHandle = NULL;
+	pyFinalizePtr();	
+
+	if (!ClosePython27())
+	{
+		// ClosePython27() will have set the error
+		return NULL;
+	}
 	return Py_BuildValue("");
 }
 
@@ -190,6 +184,7 @@ static PyObject* Finalize(PyObject* self, PyObject* args)
 static PyMethodDef mainMethods[] = {
 	{"Initialize", Initialize, METH_VARARGS, "Initialize the Python2.7 Interpreter"},
 	{"Py2_Exec", Py2_Exec, METH_VARARGS, "Execute a string in the Python2.7 interpreter"},
+	{"Py2_Eval", Py2_Eval, METH_VARARGS, "Evaluate a string in the Python2.7 interpreter"},
 	{"Finalize", Finalize, METH_VARARGS, "Close the Python2.7 interpreter"},
 	{NULL, NULL, 0, NULL}
 };
