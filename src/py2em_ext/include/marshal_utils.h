@@ -5,7 +5,7 @@
 #include <Python.h>
 #include <stdbool.h>
 
-
+bool Py2IsInitialized();
 bool LoadPython27(const char *pFilePath);
 void *GetPy2Func(const char *pSymbolName);
 bool ClosePython27();

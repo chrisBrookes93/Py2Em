@@ -4,8 +4,8 @@
 #include <Python.h>
 #include "marshal_utils.h"
 
-typedef char* (*PyString_AsStringFunc)(PyObject *);
-typedef long (*PyLongAsLongFunc)(PyObject *);
+typedef char* (*PyStringAsStringFunc) (PyObject *);
+typedef long  (*PyLongAsLongFunc)     (PyObject *);
 
 PyObject *MarshalListPy2ToPy3(PyObject *py2List);
 PyObject *MarshalLongPy2toPy3(PyObject *py2List);

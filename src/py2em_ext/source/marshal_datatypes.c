@@ -30,20 +30,18 @@ PyObject *MarshalLongPy2toPy3(PyObject *py2Obj)
 
 PyObject *MarshalStringPy2ToPy3(PyObject *py2Obj)
 {
-	printf("Enter MarshalStringPy2ToPy3\n");
+	PyStringAsStringFunc pPyStringAsString; 
+	pPyStringAsString = (PyStringAsStringFunc)GetPy2Func("PyString_AsString");
 
-	PyString_AsStringFunc pyStringAsStringPtr; 
-	pyStringAsStringPtr = (PyString_AsStringFunc)GetPy2Func("PyString_AsString");
-	if (!pyStringAsStringPtr)
+	if (!pPyStringAsString)
 	{
 		// GetPy2Func() will have set the error
 		return NULL;
 	}
-	printf("About to make py2 call\n");
 
-
+	
 	char *cstr_val;
-	cstr_val = pyStringAsStringPtr(py2Obj);
+	cstr_val = pPyStringAsString(py2Obj);
 	printf("PyString_AsString made.\n");
 
 	printf("cstr val: %s\n", cstr_val);
@@ -58,18 +56,16 @@ PyObject *MarshalObjectPy2ToPy3(PyObject *py2Obj)
 	type = py2Obj->ob_type;
 	char *typeName;
 	typeName = type->tp_name;
-	printf("type: %s", "f");
-	return MarshalStringPy2ToPy3(py2Obj);
-	/*
+	printf("return data type is:  %s\n", typeName);	
 
 	if (strcmp(typeName, "int") == 0 || strcmp(typeName, "long") == 0)
 	{
 		printf("int or long");
-		return MarshalLongPy2toPy3(pyHandle, py2Obj);		
+		return MarshalLongPy2toPy3(py2Obj);		
 	}
 	else if (strcmp(typeName, "list") == 0)
 	{
-		return MarshalListPy2ToPy3(pyHandle, py2Obj);
+		return MarshalListPy2ToPy3(py2Obj);
 	}
 	else
 	{
@@ -80,7 +76,6 @@ PyObject *MarshalObjectPy2ToPy3(PyObject *py2Obj)
 		}
 		printf("str");
 
-		return MarshalStringPy2ToPy3(pyHandle, py2Obj);
-	}*/
-	return NULL;
+		return MarshalStringPy2ToPy3(py2Obj);
+	}
 }

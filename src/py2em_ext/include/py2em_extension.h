@@ -11,5 +11,7 @@ typedef void (*PyFinalizeFunc)(void);
 typedef void (*PyErr_PrintFunc)(void);
 typedef PyObject* (*PyDict_NewFunc)(void);
 typedef PyObject* (*PyRun_StringFunc)(const char *, int start, PyObject *globals, PyObject *locals);
+typedef PyObject* (*PyImport_AddModuleFunc)(const char *name);
+typedef PyObject* (*PyModule_GetDictFunc)(PyObject *module);
 
 #endif // PY2EM_EXTENSION_h__r

@@ -8,6 +8,14 @@
 #include "py2em_extension.h"
 
 
+static PyObject* IsInitialized(PyObject* self, PyObject* args)
+{
+	
+	int intIsInit = Py2IsInitialized() ? 1 : 0;
+	return Py_BuildValue("i", intIsInit);
+}
+
+
 /**
 * Invoke PyRun_SimpleString() from the loaded libpython SO file
 *
@@ -15,35 +23,37 @@
 **/
 PyObject *RunString(const char *command, int start)
 {
-	printf("Enter RunString\n");
-
-	PyDict_NewFunc pPyDictNew;
 	PyRun_StringFunc pPyRunString;
 	PyImport_AddModuleFunc pPyImportAddModule;
 	PyModule_GetDictFunc pPyModuleGetDict;
-	pyDictNewptr = (PyDict_NewFunc)GetPy2Func("PyDict_New");
-	pyRunStringPtr = (PyRun_StringFunc)GetPy2Func("PyRun_String");
+
+	pPyRunString = (PyRun_StringFunc)GetPy2Func("PyRun_String");
+	pPyModuleGetDict = (PyModule_GetDictFunc)GetPy2Func("PyModule_GetDict");
 	pPyImportAddModule = (PyImport_AddModuleFunc)GetPy2Func("PyImport_AddModule");
 
-	if (!pPyDictNew || !pPyRunString || !pPyImportAddModule || pPyModuleGetDict)
+
+	if (!pPyRunString || !pPyImportAddModule || !pPyModuleGetDict)
 	{
 		return NULL;
 	}
 
-	/*
-	PyObject *m, *d, *v;
-    m = PyImport_AddModule("__main__");
-    if (m == NULL)
-        return -1;
-    d = PyModule_GetDict(m);
-    v = PyRun_StringFlags(command, Py_file_input, d, d, flags);
+	PyObject *pMainMod;
+	pMainMod = pPyImportAddModule("__main__");
+	if (!pMainMod)
+	{
+		printf("TODO - PyImport_AddModule FAILED\n");
+		return NULL;
+	}
 
-	*/
+	PyObject *pLocalsGlobals;
+	pLocalsGlobals = pPyModuleGetDict(pMainMod);
+	if (!pLocalsGlobals)
+	{
+		printf("TODO - PyModule_GetDict FAILED\n");
+		return NULL;
+	}
 
-	PyObject* pGlobals = pyDictNewptr();
-	PyObject* pLocals = pyDictNewptr();
-
-	PyObject* pRunStrRes = pyRunStringPtr(command, start, pGlobals, pLocals);
+	PyObject* pRunStrRes = pPyRunString(command, start, pLocalsGlobals, pLocalsGlobals);
 	printf("Finished PyRun_String\n");
 
 	// TODO - dispose of dictionaries
@@ -116,7 +126,11 @@ static PyObject* Py2_Exec(PyObject* self, PyObject* args)
 {
 	char *command;
 
-	// TODO - check whether we are initialized!
+	if (!Py2IsInitialized(NULL, NULL))
+	{
+		PyErr_SetString(PyExc_RuntimeError, "Interpreter is not Initialized.");
+		return NULL;
+	}
 
 	if (!PyArg_ParseTuple(args, "s", &command))
 	{
@@ -139,7 +153,11 @@ static PyObject* Py2_Eval(PyObject* self, PyObject* args)
 {
 	char *command;
 
-	// TODO - check whether we are initialized!
+	if (!Py2IsInitialized())
+	{
+		PyErr_SetString(PyExc_RuntimeError, "Interpreter is not Initialized.");
+		return NULL;
+	}
 
 	if (!PyArg_ParseTuple(args, "s", &command))
 	{
@@ -160,8 +178,15 @@ static PyObject* Py2_Eval(PyObject* self, PyObject* args)
 **/
 static PyObject* Finalize(PyObject* self, PyObject* args)
 {
+	if (!Py2IsInitialized())
+	{
+		PyErr_SetString(PyExc_RuntimeError, "Interpreter is not Initialized.");
+		return NULL;
+	}
+
 	PyFinalizeFunc pyFinalizePtr;
 	pyFinalizePtr = (PyFinalizeFunc)GetPy2Func("Py_Finalize");
+
 	if (!pyFinalizePtr)
 	{
 		// GetPy2Func() will have set the error
@@ -175,14 +200,19 @@ static PyObject* Finalize(PyObject* self, PyObject* args)
 		// ClosePython27() will have set the error
 		return NULL;
 	}
+
 	return Py_BuildValue("");
 }
+
+
+
 
 /**
 * Start of the Python Extension boilerplate code
 **/
 static PyMethodDef mainMethods[] = {
 	{"Initialize", Initialize, METH_VARARGS, "Initialize the Python2.7 Interpreter"},
+	{"IsInitialized", IsInitialized, METH_VARARGS, "Check if the Python2.7 Interpreter is initialized"},
 	{"Py2_Exec", Py2_Exec, METH_VARARGS, "Execute a string in the Python2.7 interpreter"},
 	{"Py2_Eval", Py2_Eval, METH_VARARGS, "Evaluate a string in the Python2.7 interpreter"},
 	{"Finalize", Finalize, METH_VARARGS, "Close the Python2.7 interpreter"},
