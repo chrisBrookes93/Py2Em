@@ -35,7 +35,7 @@ class IntegrationTests(unittest.TestCase):
         Py2Emulator.initialize()
         Py2Emulator.exec('import sys')
         version = Py2Emulator.eval('sys.version')
-        self.assertRegexpMatches(version, '2.[\\d]{1}.[\\d]{1,2}')
+        self.assertRegex(version, '2.[\\d]{1}.[\\d]{1,2}')
 
     def test_finalize_is_not_initialized(self):
         expected_error = 'Interpreter is not Initialized.'
@@ -104,3 +104,137 @@ class DivClass:
             py2em.exec('div_class = DivClass(10)')
             div_value = py2em.eval('div_class.do_div(3)')
             self.assertEqual(3, div_value)
+
+    def test_eval_return_int(self):
+        expected_val = 1337
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval('1337')
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_long(self):
+        expected_val = 999999999999999999
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_longer_long(self):
+        expected_val = 999999999999999999999999999999999999999999
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_even_longer_long(self):
+        expected_val = 999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_float(self):
+        expected_val = float(1.34)
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_complex(self):
+        expected_val = 2+3j
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_str(self):
+        expected_val = 'abcdefghijklmnopqrstuvwxyzABCDEF'
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval('"{}"'.format(expected_val))
+
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_unicode(self):
+        raise NotImplementedError
+    #     expected_val = u'µµµµµµµ'
+    #
+    #     with Py2Emulator() as py2em:
+    #         actual_val = py2em.eval('u"{}"'.format(expected_val))
+    #
+    #     self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_none(self):
+        expected_val = None
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_bool(self):
+        with Py2Emulator() as py2em:
+            should_be_true = py2em.eval(str(True))
+            should_be_false = py2em.eval(str(False))
+
+        self.assertIsInstance(should_be_true, bool)
+        self.assertTrue(should_be_true)
+        self.assertIsInstance(should_be_false, bool)
+        self.assertFalse(should_be_false)
+
+    def test_eval_return_class(self):
+        expected_val = "<class 'collections.OrderedDict'>"
+
+        with Py2Emulator() as py2em:
+            py2em.exec('from collections import OrderedDict')
+            actual_val = py2em.eval('OrderedDict')
+
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_class_instance(self):
+        expected_regex = "_sre.SRE_Pattern object at"
+
+        with Py2Emulator() as py2em:
+            py2em.exec('import re')
+            actual_val = py2em.eval("re.compile('blah')")
+
+        self.assertRegex(actual_val, expected_regex)
+
+    def test_eval_return_list(self):
+        expected_val = ['a', 1, 3.3, u'µµ', [1], {'a': 1}, set([124])]
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_set(self):
+        expected_val = set([1, 1, 2, 4])
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertIsInstance(actual_val, set)
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_tuple(self):
+        expected_val = ('a', 2, 3.14)
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertIsInstance(actual_val, tuple)
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_dict(self):
+        expected_val = {'a': 1, 'b': 'b', 'c': 3.14}
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertIsInstance(actual_val, dict)
+        self.assertDictEqual(expected_val, actual_val)

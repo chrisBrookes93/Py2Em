@@ -10,11 +10,8 @@
 
 static PyObject* IsInitialized(PyObject* self, PyObject* args)
 {
-	
-	int intIsInit = Py2IsInitialized() ? 1 : 0;
-	return Py_BuildValue("i", intIsInit);
+	return Py_BuildValue("O", Py2IsInitialized() ? Py_True : Py_False);
 }
-
 
 /**
 * Invoke PyRun_SimpleString() from the loaded libpython SO file

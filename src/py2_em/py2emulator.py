@@ -25,7 +25,7 @@ class Py2Emulator:
         """
         Returns a bool indicating if the interpreter is initialized
         """        
-        return bool(_py2_em.IsInitialized())
+        return _py2_em.IsInitialized()
 
     @staticmethod
     def initialize(libpython_path='libpython2.7.so'):
