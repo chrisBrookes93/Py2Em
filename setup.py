@@ -1,6 +1,8 @@
 from setuptools import setup, Extension, find_packages
 
-native_module = Extension('_py2_em', sources=['src/ext/_py2_em.c'])
+native_module = Extension('_py2_em', 
+	sources=['src/py2em_ext/source/py2em_extension.c', 'src/py2em_ext/source/marshal_utils.c', 'src/py2em_ext/source/marshal_datatypes.c'],
+	include_dirs=['src/py2em_ext/include'])
 
 with open('README.md', 'r') as fp:
 	long_description = fp.read()
