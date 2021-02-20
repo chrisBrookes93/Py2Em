@@ -10,7 +10,7 @@
 
 static PyObject* IsInitialized(PyObject* self, PyObject* args)
 {
-	return Py_BuildValue("O", Py2IsInitialized() ? Py_True : Py_False);
+	return PY3_Py_BuildValue("O", Py2IsInitialized() ? Py_True : Py_False);
 }
 
 /**
@@ -20,22 +20,8 @@ static PyObject* IsInitialized(PyObject* self, PyObject* args)
 **/
 PyObject *RunString(const char *command, int start)
 {
-	PyRun_StringFunc pPyRunString;
-	PyImport_AddModuleFunc pPyImportAddModule;
-	PyModule_GetDictFunc pPyModuleGetDict;
-
-	pPyRunString = (PyRun_StringFunc)GetPy2Func("PyRun_String");
-	pPyModuleGetDict = (PyModule_GetDictFunc)GetPy2Func("PyModule_GetDict");
-	pPyImportAddModule = (PyImport_AddModuleFunc)GetPy2Func("PyImport_AddModule");
-
-
-	if (!pPyRunString || !pPyImportAddModule || !pPyModuleGetDict)
-	{
-		return NULL;
-	}
-
 	PyObject *pMainMod;
-	pMainMod = pPyImportAddModule("__main__");
+	pMainMod = PY2_PyImport_AddModule("__main__");
 	if (!pMainMod)
 	{
 		printf("TODO - PyImport_AddModule FAILED\n");
@@ -43,14 +29,14 @@ PyObject *RunString(const char *command, int start)
 	}
 
 	PyObject *pLocalsGlobals;
-	pLocalsGlobals = pPyModuleGetDict(pMainMod);
+	pLocalsGlobals = PY2_PyModule_GetDict(pMainMod);
 	if (!pLocalsGlobals)
 	{
 		printf("TODO - PyModule_GetDict FAILED\n");
 		return NULL;
 	}
 
-	PyObject* pRunStrRes = pPyRunString(command, start, pLocalsGlobals, pLocalsGlobals);
+	PyObject* pRunStrRes = PY2_PyRun_String(command, start, pLocalsGlobals, pLocalsGlobals);
 	printf("Finished PyRun_String\n");
 
 	// TODO - dispose of dictionaries
@@ -58,15 +44,13 @@ PyObject *RunString(const char *command, int start)
 
 	if (!pRunStrRes)
 	{
-		PyErr_PrintFunc pPyErrPrintFunc;
-		pPyErrPrintFunc = (PyErr_PrintFunc)GetPy2Func("PyErr_Print");
-		if (!pPyErrPrintFunc)
-		{
-			return NULL;
-		}
-		pPyErrPrintFunc();
-		return NULL;
+		PY2_PyErr_Print();
+		return PY3_Py_BuildValue("");
 	}
+
+
+	// TODO - temp
+	return MarshalObjectPy2ToPy3(pRunStrRes);
 
 	if (start == Py_eval_input)
 	{
@@ -74,7 +58,6 @@ PyObject *RunString(const char *command, int start)
 	}
 	else
 	{
-		printf("Returning NULL\n");
 		return NULL;
 	}
 }
@@ -87,30 +70,28 @@ PyObject *RunString(const char *command, int start)
 **/
 static PyObject* Initialize(PyObject* self, PyObject* args)
 {
-    char *so_filepath;
-	if (!PyArg_ParseTuple(args, "s", &so_filepath))
+    if (Py2IsInitialized())
 	{
-		PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
+		PY3_PyErr_WarnEx(PyExc_Warning, "Interpreter is already Initialized.", 1);
+		PY3_Py_BuildValue("");
+	}
+
+    char *so_filepath;
+	if (!PY3_PyArg_ParseTuple(args, "s", &so_filepath))
+	{
+		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
 		return NULL;
 	}
 	;
-	if (!LoadPython27(so_filepath))
+	if (!LoadPython2AndInitFuncs(so_filepath))
 	{
 	    // LoadPython27() should have set the error
 	    return NULL;
 	}
 
-	PyInitializeFunc pyInitializePtr;
-	pyInitializePtr = (PyInitializeFunc)GetPy2Func("Py_Initialize");
-	if (!pyInitializePtr)
-	{
-		// GetPy2Func() will have set the error
-		return NULL;
-	}
-
-	pyInitializePtr();
+	PY2_Py_Initialize();
 	
-	return Py_BuildValue("");
+	return PY3_Py_BuildValue("");
 }
 
 /**
@@ -125,19 +106,22 @@ static PyObject* Py2_Exec(PyObject* self, PyObject* args)
 
 	if (!Py2IsInitialized(NULL, NULL))
 	{
-		PyErr_SetString(PyExc_RuntimeError, "Interpreter is not Initialized.");
+		PY3_PyErr_SetString(PyExc_RuntimeError, "Interpreter is not Initialized.");
 		return NULL;
 	}
 
-	if (!PyArg_ParseTuple(args, "s", &command))
+	if (!PY3_PyArg_ParseTuple(args, "s", &command))
 	{
-		PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
+		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
 		return NULL;
 	}
 
-	RunString(command, Py_file_input);
+	if (!RunString(command, Py_file_input))
+	{
+		return NULL;
+	}
 
-	return Py_BuildValue("");
+	return PY3_Py_BuildValue("");
 }
 
 /**
@@ -152,13 +136,13 @@ static PyObject* Py2_Eval(PyObject* self, PyObject* args)
 
 	if (!Py2IsInitialized())
 	{
-		PyErr_SetString(PyExc_RuntimeError, "Interpreter is not Initialized.");
+		PY3_PyErr_SetString(PyExc_RuntimeError, "Interpreter is not Initialized.");
 		return NULL;
 	}
 
 	if (!PyArg_ParseTuple(args, "s", &command))
 	{
-		PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
+		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
 		return NULL;
 	}
 
@@ -175,33 +159,23 @@ static PyObject* Py2_Eval(PyObject* self, PyObject* args)
 **/
 static PyObject* Finalize(PyObject* self, PyObject* args)
 {
+	printf("FINALIZE\n");
 	if (!Py2IsInitialized())
 	{
-		PyErr_SetString(PyExc_RuntimeError, "Interpreter is not Initialized.");
-		return NULL;
+		PY3_PyErr_WarnEx(PyExc_Warning, "Interpreter is not Initialized.", 1);
+		return PY3_Py_BuildValue("");
 	}
 
-	PyFinalizeFunc pyFinalizePtr;
-	pyFinalizePtr = (PyFinalizeFunc)GetPy2Func("Py_Finalize");
-
-	if (!pyFinalizePtr)
-	{
-		// GetPy2Func() will have set the error
-		return NULL;
-	}
-
-	pyFinalizePtr();	
-
+	PY2_Py_Finalize();
+		
 	if (!ClosePython27())
 	{
 		// ClosePython27() will have set the error
 		return NULL;
 	}
 
-	return Py_BuildValue("");
+	return PY3_Py_BuildValue("");
 }
-
-
 
 
 /**

@@ -2,16 +2,7 @@
 #define PY2EM_EXTENSION_h__
 
 #include <Python.h>
+#include "marshal_utils.h"
 
-/**
-* Typedefs for the functions invoked in the libpython2.7.so file
-**/
-typedef void (*PyInitializeFunc)(void);
-typedef void (*PyFinalizeFunc)(void);
-typedef void (*PyErr_PrintFunc)(void);
-typedef PyObject* (*PyDict_NewFunc)(void);
-typedef PyObject* (*PyRun_StringFunc)(const char *, int start, PyObject *globals, PyObject *locals);
-typedef PyObject* (*PyImport_AddModuleFunc)(const char *name);
-typedef PyObject* (*PyModule_GetDictFunc)(PyObject *module);
 
 #endif // PY2EM_EXTENSION_h__r

@@ -1,5 +1,10 @@
 import unittest
+import warnings
 from py2_em import Py2Emulator
+
+ULLONG_MAX = 18446744073709551615
+LLONG_MIN = -9223372036854775807
+LONG_MAX = 2147483647
 
 
 class IntegrationTests(unittest.TestCase):
@@ -39,9 +44,12 @@ class IntegrationTests(unittest.TestCase):
 
     def test_finalize_is_not_initialized(self):
         expected_error = 'Interpreter is not Initialized.'
-        self.assertRaisesRegex(RuntimeError,
-                               expected_error,
-                               Py2Emulator.finalize)
+
+        with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter('always')
+            Py2Emulator.finalize()
+            self.assertEqual(1, len(warn))
+            self.assertRegexpMatches(str(warn[0].message), 'Interpreter is not Initialized.')
 
     def test_finalize_correct_case(self):
         Py2Emulator.initialize()
@@ -64,11 +72,20 @@ class IntegrationTests(unittest.TestCase):
         self.assertTrue(Py2Emulator.is_initialized())
         self.assertEqual(2, Py2Emulator.eval('1+1'))
         Py2Emulator.finalize()
+
         self.assertFalse(Py2Emulator.is_initialized())
-        self.assertRaises(RuntimeError, Py2Emulator.finalize)
+        with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter('always')
+            Py2Emulator.finalize()
+            self.assertEqual(1, len(warn))
+            self.assertRegexpMatches(str(warn[0].message), 'Interpreter is not Initialized.')
+
         self.assertFalse(Py2Emulator.is_initialized())
-        self.assertRaises(RuntimeError, Py2Emulator.finalize)
-        self.assertFalse(Py2Emulator.is_initialized())
+        with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter('always')
+            Py2Emulator.finalize()
+            self.assertEqual(1, len(warn))
+            self.assertRegexpMatches(str(warn[0].message), 'Interpreter is not Initialized.')
 
     def test_as_context_manager(self):
         with Py2Emulator() as py2em:
@@ -109,31 +126,59 @@ class DivClass:
         expected_val = 1337
         with Py2Emulator() as py2em:
             actual_val = py2em.eval('1337')
+
+        self.assertIsInstance(actual_val, int)
         self.assertEqual(expected_val, actual_val)
 
     def test_eval_return_long(self):
-        expected_val = 999999999999999999
+        expected_val = 999999999999999
 
         with Py2Emulator() as py2em:
             actual_val = py2em.eval(str(expected_val))
 
+        self.assertIsInstance(actual_val, int)
         self.assertEqual(expected_val, actual_val)
 
-    def test_eval_return_longer_long(self):
-        expected_val = 999999999999999999999999999999999999999999
+    def test_eval_return_ulong(self):
+        expected_val = ULLONG_MAX - 10
 
         with Py2Emulator() as py2em:
             actual_val = py2em.eval(str(expected_val))
 
+        self.assertIsInstance(actual_val, int)
         self.assertEqual(expected_val, actual_val)
 
-    def test_eval_return_even_longer_long(self):
-        expected_val = 999999999999999999999999999999999999999999999999999999999999999999999999999999999999
+    def test_eval_positive_overflow_handled_gracefully(self):
+        with Py2Emulator() as py2em:
+            self.assertRaisesRegex(RuntimeError,
+                                   'Long value overflow. Value is larger than an unsigned long long.',
+                                   py2em.eval,
+                                   str(ULLONG_MAX + 10))
+
+    def test_eval_negative_int(self):
+        expected_val = -1337
 
         with Py2Emulator() as py2em:
             actual_val = py2em.eval(str(expected_val))
 
+        self.assertIsInstance(actual_val, int)
         self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_negative_long(self):
+        expected_val = -999999999999999
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertIsInstance(actual_val, int)
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_underflow_handled_gracefully(self):
+        with Py2Emulator() as py2em:
+            self.assertRaisesRegex(RuntimeError,
+                                   'Long value overflow/underflow. Value does not fit in a long long',
+                                   py2em.eval,
+                                   str(LLONG_MIN - 10))
 
     def test_eval_return_float(self):
         expected_val = float(1.34)
@@ -141,6 +186,16 @@ class DivClass:
         with Py2Emulator() as py2em:
             actual_val = py2em.eval(str(expected_val))
 
+        self.assertIsInstance(actual_val, float)
+        self.assertEqual(expected_val, actual_val)
+
+    def test_eval_return_float_precision(self):
+        expected_val = float(1.123456789123456789123456789)
+
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertIsInstance(actual_val, float)
         self.assertEqual(expected_val, actual_val)
 
     def test_eval_return_complex(self):
@@ -149,6 +204,7 @@ class DivClass:
         with Py2Emulator() as py2em:
             actual_val = py2em.eval(str(expected_val))
 
+        self.assertIsInstance(actual_val, complex)
         self.assertEqual(expected_val, actual_val)
 
     def test_eval_return_str(self):
@@ -157,6 +213,7 @@ class DivClass:
         with Py2Emulator() as py2em:
             actual_val = py2em.eval('"{}"'.format(expected_val))
 
+        self.assertIsInstance(actual_val, str)
         self.assertEqual(expected_val, actual_val)
 
     def test_eval_return_unicode(self):
@@ -169,12 +226,11 @@ class DivClass:
     #     self.assertEqual(expected_val, actual_val)
 
     def test_eval_return_none(self):
-        expected_val = None
 
         with Py2Emulator() as py2em:
-            actual_val = py2em.eval(str(expected_val))
+            actual_val = py2em.eval(str(None))
 
-        self.assertEqual(expected_val, actual_val)
+        self.assertIsNone(actual_val)
 
     def test_eval_return_bool(self):
         with Py2Emulator() as py2em:
@@ -238,3 +294,21 @@ class DivClass:
 
         self.assertIsInstance(actual_val, dict)
         self.assertDictEqual(expected_val, actual_val)
+
+    def test_exec_invalid_syntax(self):
+        with Py2Emulator() as py2em:
+            self.assertRaisesRegex(SyntaxError,
+                                   'gfggfgd',
+                                   py2em.exec,
+                                   'invalid SYNTAX')
+
+    def test_eval_invalid_syntax(self):
+        with Py2Emulator() as py2em:
+            self.assertRaisesRegex(SyntaxError,
+                                   'gfggfgd',
+                                   py2em.eval,
+                                   'invalid SYNTAX')
+
+
+# TODO - most tests raising /home/user1/.local/lib/python3.8/site-packages/py2_em/py2emulator.py:66: Warning: Interpreter is not Initialized.
+#   _py2_em.Finalize()

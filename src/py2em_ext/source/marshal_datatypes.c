@@ -3,109 +3,157 @@
 
 PyObject *MarshalListPy2ToPy3(PyObject *py2List)
 {
-	PyObject *iterator = PyObject_GetIter(py2List);
-	PyObject *item;
+	// Get the size of the list
+	Py_ssize_t listLen = PY2_PyList_Size(py2List);
 
-	while ((item = PyIter_Next(iterator)))
+	// Initialize the new list
+	PyObject *pPy3List;
+	pPy3List = PY3_PyList_New(listLen);
+	
+	// Get an interator to the py2 list
+	PyObject *pIterator = PY2_PyObject_GetIter(py2List);
+	PyObject *pPy2Item;
+	PyObject *pPy3Item;
+	int index = 0;
+
+	while ((pPy2Item = PY2_PyIter_Next(pIterator)))
 	{
-		printf("loop");
+		// Marshal the current item to a Py3 object and add to the new list
+		pPy3Item = MarshalObjectPy2ToPy3(pPy2Item);
+		if (!pPy3Item)
+		{
+			// TODO - clean up everything
+			return NULL;
+		}
+		PY3_PyList_SetItem(pPy3List, index, pPy3Item);
 
+		//PY2_Py_XDECREF(pPy2Item);
+
+		index++;
 	}
-	return NULL;
+	//PY2_Py_XDECREF(pIterator);
+
+	return pPy3List;
+}
+
+PyObject *MarshalSetPy2ToPy3(PyObject *py2Obj)
+{
+	// Initialize the new set
+	PyObject *pPy3Set;
+	pPy3Set = PY3_PySet_New(NULL);
+	
+	printf("GETTING ITERATOR \n");
+
+	// Get an interator to the py2 set
+	PyObject *pPy2Iterator = PY2_PyObject_GetIter(py2Obj);
+	printf("GOT ITERATOR \n");
+	PyObject *pPy2Item;
+	PyObject *pPy3Item;
+	int index = 0;
+
+	while ((pPy2Item = PY2_PyIter_Next(pPy2Iterator)))
+	{
+		// Marshal the current item to a Py3 object and add to the new set
+		pPy3Item = MarshalObjectPy2ToPy3(pPy2Item);
+		if (!pPy3Item)
+		{
+			// TODO - clean up everything
+			printf("Serialization failed :(\n");
+			return NULL;
+		}
+		printf("SETTING ITEM\n");
+		PY3_PySet_Add(pPy3Set, pPy3Item);
+		printf("FINISHED SETTING ITEM\n");
+
+		//PY2_Py_XDECREF(pPy2Item);
+
+		index++;
+	}
+	//PY2_Py_XDECREF(pIterator);
+
+	return pPy3Set;
 }
 
 PyObject *MarshalLongPy2toPy3(PyObject *py2Obj)
 {
-	PyLongAsLongFunc pyLongAsLongPtr;
-	pyLongAsLongPtr = (PyLongAsLongFunc)GetPy2Func("PyLong_AsLong");
-	if (!pyLongAsLongPtr)
-	{
-		// GetPy2Func() will have set the error
-		return NULL;
-	}
+	int overflow;
+	// First attempt to marshal it to a long
+	long cLongVal = PY2_PyLong_AsLongAndOverflow(py2Obj, &overflow);
 
-	long int cLongVal = pyLongAsLongPtr(py2Obj);
-	return Py_BuildValue("l", cLongVal);
+	if (overflow == 1)
+	{
+		// Overflowed a long, attempt a larger structure
+		unsigned long long cULongLongVal = PY2_PyLong_AsUnsignedLongLong(py2Obj);
+		if (cULongLongVal == -1)
+		{
+			PY3_PyErr_SetString(PyExc_RuntimeError, "Long value overflow. Value is larger than an unsigned long long.");
+			return NULL;
+		}
+		return PY3_Py_BuildValue("K", cULongLongVal);
+
+	}
+	else if (overflow == -1)
+	{
+		printf("UNDERFLOW 1\n");
+		// Underflowed a long, attempt a larger structure
+		long long cLongLongVal = PY2_PyLong_AsLongLongAndOverflow(py2Obj, &overflow);
+		printf("pPyLongAsLongLongOverflow call made\n");
+
+		if (overflow != 0)
+		{
+			printf("UNDERFLOW 2\n");
+
+			PY3_PyErr_SetString(PyExc_RuntimeError, "Long value overflow/underflow. Value does not fit in a long long");
+			return NULL;		
+		}
+				printf("Build \n");
+
+		return PY3_Py_BuildValue("L", cLongLongVal);
+	} 
+	else
+	{
+		return PY3_Py_BuildValue("l", cLongVal);
+	}
 }
 
 PyObject *MarshalBoolPy2ToPy3(PyObject *py2Obj)
 {
-	PyObjectIsTrueFunc pPyObjectIsTrue;
-	pPyObjectIsTrue = (PyObjectIsTrueFunc)GetPy2Func("PyObject_IsTrue");
-	if (!pPyObjectIsTrue)
-	{
-		// GetPy2Func() will have set the error
-		return NULL;
-	}
-
-	return pPyObjectIsTrue ? Py_True : Py_False;
+	return PY2_PyObject_IsTrue(py2Obj) ? Py_True : Py_False;
 }
 
 PyObject *MarshalFloatPy2ToPy3(PyObject *py2Obj)
 {
-	PyFloatAsDoubleFunc pFloatAsDouble;
-	pFloatAsDouble = (PyFloatAsDoubleFunc)GetPy2Func("PyFloat_AsDouble");
-	if (!pFloatAsDouble)
-	{
-		// GetPy2Func() will have set the error
-		return NULL;
-	}
-
-	double dFloatVal = pFloatAsDouble(py2Obj);
-	return Py_BuildValue("d", dFloatVal);
+	double dFloatVal = PY2_PyFloat_AsDouble(py2Obj);
+	return PY3_Py_BuildValue("d", dFloatVal);
 }
 
 PyObject *MarshalComplexPy2ToPy3(PyObject *py2Obj)
 {
-	PyComplexRealAsDoubleFunc pComplexRealAsDouble;
-	PyComplexImagAsDoubleFunc pComplexImagAsDouble;
-	pComplexRealAsDouble = (PyComplexRealAsDoubleFunc)GetPy2Func("PyComplex_RealAsDouble");
-	pComplexImagAsDouble = (PyComplexImagAsDoubleFunc)GetPy2Func("PyComplex_ImagAsDouble");
-
-	if (!pComplexRealAsDouble || !pComplexImagAsDouble)
-	{
-		// GetPy2Func() will have set the error
-		return NULL;
-	}
-
-	double dRealVal = pComplexRealAsDouble(py2Obj);
-	double dImagVal = pComplexImagAsDouble(py2Obj);
+	double dRealVal = PY2_PyComplex_RealAsDouble(py2Obj);
+	double dImagVal = PY2_PyComplex_ImagAsDouble(py2Obj);
 
 	PyObject *pComplex;
-	pComplex = PyComplex_FromDoubles(dRealVal, dImagVal);
+	pComplex = PY3_PyComplex_FromDoubles(dRealVal, dImagVal);
 	return pComplex;
-	//return Py_BuildValue("D", pComplex);
 }
 
 
 PyObject *MarshalStringPy2ToPy3(PyObject *py2Obj)
 {
-	PyStringAsStringFunc pPyStringAsString; 
-	pPyStringAsString = (PyStringAsStringFunc)GetPy2Func("PyString_AsString");
-
-	if (!pPyStringAsString)
-	{
-		// GetPy2Func() will have set the error
-		return NULL;
-	}
-
-	
 	char *cstr_val;
-	cstr_val = pPyStringAsString(py2Obj);
+	cstr_val = PY2_PyString_AsString(py2Obj);
 	printf("PyString_AsString made.\n");
 
-	printf("cstr val: %s\n", cstr_val);
-
-	return Py_BuildValue("s", cstr_val);
+	return PY3_Py_BuildValue("s", cstr_val);
 }
 
 PyObject *MarshalObjectPy2ToPy3(PyObject *py2Obj)
 {
 	printf("Enter MarshalObjectPy2ToPy3");
-	PyTypeObject *type;
-	type = py2Obj->ob_type;
+	PyTypeObject *pTypeObj;
+	pTypeObj = py2Obj->ob_type;
 	char *typeName;
-	typeName = type->tp_name;
+	typeName = pTypeObj->tp_name;
 	printf("return data type is:  %s\n", typeName);	
 
 	if (strcmp(typeName, "int") == 0 || strcmp(typeName, "long") == 0)
@@ -115,16 +163,18 @@ PyObject *MarshalObjectPy2ToPy3(PyObject *py2Obj)
 	if (strcmp(typeName, "float") == 0)
 	{
 		return MarshalFloatPy2ToPy3(py2Obj);
-
 	}
 	if (strcmp(typeName, "complex") == 0)
 	{
 		return MarshalComplexPy2ToPy3(py2Obj);
-
 	}
 	else if (strcmp(typeName, "list") == 0)
 	{
 		return MarshalListPy2ToPy3(py2Obj);
+	}
+	else if (strcmp(typeName, "set") == 0)
+	{
+		return MarshalSetPy2ToPy3(py2Obj);
 	}
 	else if (strcmp(typeName, "bool") == 0)
 	{
@@ -132,25 +182,15 @@ PyObject *MarshalObjectPy2ToPy3(PyObject *py2Obj)
 	}
 	else if (strcmp(typeName, "NoneType") == 0)
 	{
-		return Py_BuildValue("");
+		return PY3_Py_BuildValue("");
 	}
 	else if (strcmp(typeName, "str") == 0)
 	{
 		return MarshalStringPy2ToPy3(py2Obj);
 	}
-
 	else
 	{
-		PyErr_WarnFormat(PyExc_Warning, 1, "Failed to marshal data type '%s', returning it as a str()", typeName);
-		PyObjectStrFunc pPyObjectStr;
-		pPyObjectStr = (PyObjectStrFunc)GetPy2Func("PyObject_Str");
-		if (!pPyObjectStr)
-		{
-			// GetPy2Func() will have set the error
-			return NULL;
-		}
-
-		PyObject *pStr = pPyObjectStr(py2Obj);
+		PyObject *pStr = PY2_PyObject_Str(py2Obj);
 		return MarshalStringPy2ToPy3(pStr);
 	}
 }
