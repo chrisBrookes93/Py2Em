@@ -4,13 +4,8 @@
 #include <dlfcn.h>
 #include <Python.h>
 #include <stdbool.h>
+#include "logging.h"
 
-
-/*
-typedef PyObject* (*PyDict_NewFunc)(void);
-*/
-
-// new defs
 typedef void 				(*Py_Initialize_t)					(void);
 typedef void 				(*Py_Finalize_t)					(void);
 typedef PyObject*			(*PyObject_GetIter_t)				(PyObject *);
@@ -30,8 +25,6 @@ typedef PyObject* 			(*PyRun_String_t)					(const char *, int start, PyObject *g
 typedef PyObject* 			(*PyImport_AddModule_t)				(const char *name);
 typedef PyObject* 			(*PyModule_GetDict_t)				(PyObject *module);
 typedef void 				(*PyErr_Print_t)					(void);
-
-
 
 #define PY3_PyList_New PyList_New 
 #define PY3_PyList_SetItem PyList_SetItem

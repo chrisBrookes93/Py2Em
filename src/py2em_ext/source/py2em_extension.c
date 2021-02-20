@@ -10,6 +10,7 @@
 
 static PyObject* IsInitialized(PyObject* self, PyObject* args)
 {
+	Log("Enter C IsInitialized\n");
 	return PY3_Py_BuildValue("O", Py2IsInitialized() ? Py_True : Py_False);
 }
 
@@ -20,45 +21,49 @@ static PyObject* IsInitialized(PyObject* self, PyObject* args)
 **/
 PyObject *RunString(const char *command, int start)
 {
+	Log("Enter C RunString\n");
+	Log("Importing __main__ to get the locals/globals...");
 	PyObject *pMainMod;
 	pMainMod = PY2_PyImport_AddModule("__main__");
 	if (!pMainMod)
 	{
-		printf("TODO - PyImport_AddModule FAILED\n");
+		Log("TODO - PyImport_AddModule FAILED\n");
 		return NULL;
 	}
+	Log("Success\nObtaining the variable dictionary...");
 
 	PyObject *pLocalsGlobals;
 	pLocalsGlobals = PY2_PyModule_GetDict(pMainMod);
 	if (!pLocalsGlobals)
 	{
-		printf("TODO - PyModule_GetDict FAILED\n");
+		Log("TODO - PyModule_GetDict FAILED\n");
 		return NULL;
 	}
+	Log("Success.\nCalling PyRun_String()...");
 
 	PyObject* pRunStrRes = PY2_PyRun_String(command, start, pLocalsGlobals, pLocalsGlobals);
-	printf("Finished PyRun_String\n");
 
 	// TODO - dispose of dictionaries
 	// TODO - dispose of pRunStrRes
 
 	if (!pRunStrRes)
 	{
+		Log("Failed. Printing Error:\n");
 		PY2_PyErr_Print();
 		return PY3_Py_BuildValue("");
 	}
+	Log("Success.\n");
 
-
-	// TODO - temp
-	return MarshalObjectPy2ToPy3(pRunStrRes);
 
 	if (start == Py_eval_input)
 	{
+		Log("Marshalling return data...\n");
 		return MarshalObjectPy2ToPy3(pRunStrRes);
 	}
 	else
 	{
-		return NULL;
+		Log("We are not evaluating, so returning empty value (None)\n");
+		return PY3_Py_BuildValue("");
 	}
 }
 
@@ -70,6 +75,7 @@ PyObject *RunString(const char *command, int start)
 **/
 static PyObject* Initialize(PyObject* self, PyObject* args)
 {
+	Log("Enter C Initialize()\n");
     if (Py2IsInitialized())
 	{
 		PY3_PyErr_WarnEx(PyExc_Warning, "Interpreter is already Initialized.", 1);
@@ -90,7 +96,7 @@ static PyObject* Initialize(PyObject* self, PyObject* args)
 	}
 
 	PY2_Py_Initialize();
-	
+
 	return PY3_Py_BuildValue("");
 }
 
@@ -102,6 +108,8 @@ static PyObject* Initialize(PyObject* self, PyObject* args)
 **/
 static PyObject* Py2_Exec(PyObject* self, PyObject* args)
 {
+	Log("Enter C Py2_Exec\n");
+
 	char *command;
 
 	if (!Py2IsInitialized(NULL, NULL))
@@ -132,6 +140,8 @@ static PyObject* Py2_Exec(PyObject* self, PyObject* args)
 **/
 static PyObject* Py2_Eval(PyObject* self, PyObject* args)
 {
+	Log("Enter C Py2_Eval\n");
+
 	char *command;
 
 	if (!Py2IsInitialized())
@@ -159,18 +169,21 @@ static PyObject* Py2_Eval(PyObject* self, PyObject* args)
 **/
 static PyObject* Finalize(PyObject* self, PyObject* args)
 {
-	printf("FINALIZE\n");
+	Log("Enter C Finalize\n");
 	if (!Py2IsInitialized())
 	{
+		Log("Interpreter is not Initialized.\n");
 		PY3_PyErr_WarnEx(PyExc_Warning, "Interpreter is not Initialized.", 1);
 		return PY3_Py_BuildValue("");
 	}
 
+	Log("Calling Py_Finalize()\n");
 	PY2_Py_Finalize();
 		
 	if (!ClosePython27())
 	{
 		// ClosePython27() will have set the error
+		Log("Failed to close the Python2 binary\n");
 		return NULL;
 	}
 

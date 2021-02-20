@@ -16,11 +16,13 @@ bool LoadPython2AndInitFuncs(const char *pFilePath)
 	// Check if we're already loaded!
 	if (pGlobPyHandle)
 	{
+		Log("Python2 binary already loaded\n");
 		return true;
 	}
 
 	// Clear out any current error
 	(void)dlerror();
+	Log("Loading Python2 binary: %s...", pFilePath);
 
 	// This has to be DEEPBIND because within our Python3 extension there are already functions like Py_Initialize().
 	// In order to make sure we call the functions in the Py2 .so file, we need to specify RTLD_DEEPBIND to place the
@@ -31,8 +33,13 @@ bool LoadPython2AndInitFuncs(const char *pFilePath)
 	pError = dlerror();
 	if (!pGlobPyHandle || pError) 
 	{
+		Log("Failed. Error: %s\n", pError);
 		PyErr_SetString(PyExc_RuntimeError, pError);
 		return false;
+	}
+	else
+	{
+		Log("Success.\n", pFilePath);
 	}
 
 	if (!InitializeFunctionPointers())
@@ -77,6 +84,7 @@ bool InitializeFunctionPointers()
 		!PY2_PyFloat_AsDouble || !PY2_PyComplex_RealAsDouble || !PY2_PyComplex_ImagAsDouble || !PY2_PyString_AsString || !PY2_PyObject_Str ||
 		!PY2_PyRun_String || !PY2_PyModule_GetDict || !PY2_PyImport_AddModule || !PY2_PyErr_Print) 
 	{
+		Log("Failed to find one of the Python2 functions.\n");
 		UninitializeFunctionPointers();
 		return false;
 	}
@@ -103,6 +111,7 @@ void UninitializeFunctionPointers()
 	PY2_PyModule_GetDict = NULL;
 	PY2_PyImport_AddModule = NULL;
 	PY2_PyErr_Print = NULL;
+	Log("Set all of the Python2 function pointers to NULL.\n");
 }
 
 void *GetPy2Func(const char *pSymbolName)
@@ -113,12 +122,18 @@ void *GetPy2Func(const char *pSymbolName)
 	// Clear out any current error
 	(void)dlerror();
 
+	Log("Loading function %s() ...", pSymbolName);
 	pRetVal = dlsym(pGlobPyHandle, pSymbolName);
 	pError = dlerror();
 
 	if (pError || !pRetVal)
 	{
+		Log("Failed. Error: %s\n", pError);
 		PyErr_SetString(PyExc_RuntimeError, pError);
+	}
+	else
+	{
+		Log("Success.\n");
 	}
 	return pRetVal;
 }
@@ -127,12 +142,22 @@ bool ClosePython27()
 {
 	if (pGlobPyHandle)
 	{
+		Log("Calling dlclose() on the Python2 binary...");
 		int ret = dlclose(pGlobPyHandle);
 		if (ret != 0)
 		{
+			Log("Failed.");
 			PyErr_WarnEx(PyExc_Warning, "dlclose() returned a non-zero return code", 1);
 			return false;
 		}
+		else
+		{
+			Log("Success\n");
+		}
+	}
+	else
+	{
+		Log("Python2 binary is not loaded.\n");
 	}
 	UninitializeFunctionPointers();
 	pGlobPyHandle = NULL;
