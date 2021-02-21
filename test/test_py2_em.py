@@ -224,7 +224,8 @@ class DivClass:
     def test_eval_return_unicode(self):
         import base64
         expected_val = 'µ, ж, з, к, л'
-        input_val = "a = base64.b64decode(u'{}')".format(base64.b64encode(expected_val.encode('utf-8')).decode('utf-8'))
+        b64_data = base64.b64encode(expected_val.encode('utf-8')).decode('utf-8')
+        input_val = "a = base64.b64decode(u'{}')".format(b64_data)
         with Py2Emulator() as py2em:
             py2em.exec("import base64")
             py2em.exec(input_val)
