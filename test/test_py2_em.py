@@ -48,7 +48,7 @@ class IntegrationTests(unittest.TestCase):
             warnings.simplefilter('always')
             Py2Emulator.finalize()
             self.assertEqual(1, len(warn))
-            self.assertRegexpMatches(str(warn[0].message), 'Interpreter is not Initialized.')
+            self.assertRegexpMatches(str(warn[0].message), expected_error)
 
     def test_finalize_correct_case(self):
         Py2Emulator.initialize()
@@ -61,7 +61,13 @@ class IntegrationTests(unittest.TestCase):
         Py2Emulator.initialize()
         self.assertTrue(Py2Emulator.is_initialized())
         self.assertEqual(2, Py2Emulator.eval('1+1'))
-        Py2Emulator.initialize()
+
+        with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter('always')
+            Py2Emulator.initialize()
+            self.assertEqual(1, len(warn))
+            self.assertRegexpMatches(str(warn[0].message), 'Interpreter is already Initialized.')
+
         self.assertTrue(Py2Emulator.is_initialized())
         self.assertEqual(3, Py2Emulator.eval('1+2'))
         Py2Emulator.finalize()
@@ -275,6 +281,7 @@ class DivClass:
 
         with Py2Emulator() as py2em:
             actual_val = py2em.eval(str(expected_val))
+            print(actual_val)
 
         self.assertIsInstance(actual_val, set)
         self.assertEqual(expected_val, actual_val)

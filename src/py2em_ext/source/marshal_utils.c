@@ -1,6 +1,11 @@
 #include "marshal_utils.h"
 
-
+/**
+* Returns a bool indicating whether the Python2 interpreter is initialized. 
+* This is done by checking that the Python2 binary is loaded.
+*
+* @return bool indicating whether the Python2 binary is loaded
+**/
 bool Py2IsInitialized()
 {
 	return pGlobPyHandle != NULL;
@@ -10,6 +15,7 @@ bool Py2IsInitialized()
 * Load the libpython27.so file into memory via dlopen().
 *
 * @param pFilePath Name or filepath. The name must be resolvable on the LD search path
+* @return bool indicating success
 **/
 bool LoadPython2AndInitFuncs(const char *pFilePath)
 {
@@ -51,6 +57,11 @@ bool LoadPython2AndInitFuncs(const char *pFilePath)
 	return true;
 }
 
+/**
+* Initialize all of the Python2 function pointers. This is done in one central place for convenience and tidiness.
+*
+* @return bool indicating success
+**/
 bool InitializeFunctionPointers()
 {
 	if (!pGlobPyHandle)
@@ -80,10 +91,26 @@ bool InitializeFunctionPointers()
 	PY2_PyDict_Next = (PyDict_Next_t)GetPy2Func("PyDict_Next");
 	PY2_PyTuple_Size = (PyTuple_Size_t)GetPy2Func("PyTuple_Size");
 
-	if (!PY2_PyObject_GetIter || !PY2_PyIter_Next || !PY2_PyList_Size || !PY2_Py_Initialize || !PY2_Py_Finalize ||
-		!PY2_PyLong_AsLongAndOverflow || !PY2_PyLong_AsLongLongAndOverflow || !PY2_PyLong_AsUnsignedLongLong || !PY2_PyObject_IsTrue ||
-		!PY2_PyFloat_AsDouble || !PY2_PyComplex_RealAsDouble || !PY2_PyComplex_ImagAsDouble || !PY2_PyString_AsString || !PY2_PyObject_Str ||
-		!PY2_PyRun_String || !PY2_PyModule_GetDict || !PY2_PyImport_AddModule || !PY2_PyErr_Print || !PY2_PyDict_Next || !PY2_PyTuple_Size
+	if (!PY2_PyObject_GetIter || 
+		!PY2_PyIter_Next || 
+		!PY2_PyList_Size || 
+		!PY2_Py_Initialize || 
+		!PY2_Py_Finalize ||
+		!PY2_PyLong_AsLongAndOverflow || 
+		!PY2_PyLong_AsLongLongAndOverflow || 
+		!PY2_PyLong_AsUnsignedLongLong || 
+		!PY2_PyObject_IsTrue ||
+		!PY2_PyFloat_AsDouble || 
+		!PY2_PyComplex_RealAsDouble || 
+		!PY2_PyComplex_ImagAsDouble || 
+		!PY2_PyString_AsString || 
+		!PY2_PyObject_Str ||
+		!PY2_PyRun_String || 
+		!PY2_PyModule_GetDict || 
+		!PY2_PyImport_AddModule || 
+		!PY2_PyErr_Print || 
+		!PY2_PyDict_Next || 
+		!PY2_PyTuple_Size
 		) 
 	{
 		Log("Failed to find one of the Python2 functions.\n");
@@ -93,6 +120,9 @@ bool InitializeFunctionPointers()
 	return true;
 }
 
+/**
+* Sets all of the Python2 function pointers to NULL
+**/
 void UninitializeFunctionPointers()
 {
 	PY2_PyObject_GetIter = NULL;
@@ -118,10 +148,20 @@ void UninitializeFunctionPointers()
 	Log("Set all of the Python2 function pointers to NULL.\n");
 }
 
+/**
+* Performs a dlsym() on the loaded Python2 binary and returns the symbol asked for (or NULL)
+*
+* @returns void* pointer to the desired function (or NULL)
+**/
 void *GetPy2Func(const char *pSymbolName)
 {
 	void *pRetVal = NULL;
 	char *pError = NULL;
+
+	if (!pGlobPyHandle)
+	{
+		return pRetVal;
+	}
 
 	// Clear out any current error
 	(void)dlerror();
@@ -142,15 +182,21 @@ void *GetPy2Func(const char *pSymbolName)
 	return pRetVal;
 }
 
+/**
+* Closes the Python2 binary.
+*
+* @returns bool indicating success
+**/
 bool ClosePython27()
 {
 	if (pGlobPyHandle)
 	{
 		Log("Calling dlclose() on the Python2 binary...");
 		int ret = dlclose(pGlobPyHandle);
-		if (ret != 0)
+		if (ret != ERROR_SUCCESS)
 		{
-			Log("Failed.");
+			Log("Failed.\n");
+			pGlobPyHandle = NULL;
 			PyErr_WarnEx(PyExc_Warning, "dlclose() returned a non-zero return code", 1);
 			return false;
 		}

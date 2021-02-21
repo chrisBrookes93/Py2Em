@@ -6,6 +6,7 @@
 #include <Python.h>
 #include "marshal_utils.h"
 #include "logging.h"
+#include "py2_decref.h"
 
 #define STR_MATCH 0
 

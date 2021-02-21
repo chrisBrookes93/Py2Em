@@ -62,12 +62,12 @@ PyObject *RunString(const char *pCommand, int start)
 	{
 		Log("Marshalling return data...\n");
 		pRetVal = MarshalObjectPy2ToPy3(pRunStrRes);
-		PY2_Py_DECREF(pRunStrRes);
+		PY2_Py_XDECREF(pRunStrRes);
 		return pRetVal;
 	}
 	else
 	{
-		PY2_Py_DECREF(pRunStrRes);
+		PY2_Py_XDECREF(pRunStrRes);
 		// We are not evaluating, so return an empty (but not NULL) value
 		return PY3_Py_BuildValue("");
 	}

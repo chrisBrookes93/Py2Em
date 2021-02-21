@@ -3,21 +3,23 @@
 
 #define PY_SSIZE_T_CLEAN
 
+#include <stdbool.h>
 #include <dlfcn.h>
 #include <Python.h>
-#include <stdbool.h>
 #include "logging.h"
 
 #define ERROR_SUCCESS 0
 #define ERROR_OVERFLOW 1
 #define ERROR_UNDERFLOW -1
 
+/**
+* Typedefs for the Python2 functions used
+**/
 typedef void 				(*Py_Initialize_t)					(void);
 typedef void 				(*Py_Finalize_t)					(void);
 typedef PyObject*			(*PyObject_GetIter_t)				(PyObject *);
 typedef PyObject*			(*PyIter_Next_t)					(PyObject *);
 typedef Py_ssize_t			(*PyList_Size_t)					(PyObject *);
-typedef void				(*Py_XDECREF_t)						(PyObject *);
 typedef long  				(*PyLong_AsLongAndOverflow_t)		(PyObject *, int*);
 typedef long long 			(*PyLong_AsLongLongAndOverflow_t)	(PyObject *, int*);
 typedef unsigned long long 	(*PyLong_AsUnsignedLongLong_t)		(PyObject *);
@@ -63,7 +65,9 @@ bool ClosePython27();
 **/
 void *pGlobPyHandle;
 
-
+/**
+* Python2 function pointers
+*/
 PyObject_GetIter_t 				PY2_PyObject_GetIter;
 PyIter_Next_t 					PY2_PyIter_Next;
 PyList_Size_t					PY2_PyList_Size;

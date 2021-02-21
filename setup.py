@@ -7,7 +7,7 @@ native_module = Extension('_py2_em',
                               'src/py2em_ext/source/marshal_datatypes.c',
                               'src/py2em_ext/source/logging.c'],
                           include_dirs=['src/py2em_ext/include'],
-                          define_macros=[('LOGGING_ON', 1)])
+                          define_macros=[('LOGGING_ON', 0)])
                           
 
 with open('README.md', 'r') as fp:
@@ -25,7 +25,7 @@ setup(
     url='https://github.com/chrisBrookes93/Py2Em',
     python_requires='>=3',
     classifiers=[
-        'Development Status :: 1 - Planning',
+        'Development Status :: 4 - Beta',
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
         'Operating System :: POSIX :: Linux'
