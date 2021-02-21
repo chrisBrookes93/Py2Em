@@ -124,6 +124,9 @@ static PyObject* Py2_Exec(PyObject* self, PyObject* args)
 		return NULL;
 	}
 
+	Log("Command to exec: %s\n", command);
+
+
 	if (!RunString(command, Py_file_input))
 	{
 		return NULL;
@@ -155,6 +158,8 @@ static PyObject* Py2_Eval(PyObject* self, PyObject* args)
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
 		return NULL;
 	}
+		Log("Command to exec: %s\n", command);
+
 
 	PyObject * res = RunString(command, Py_eval_input);
 

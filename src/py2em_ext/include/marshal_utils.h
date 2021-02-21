@@ -6,6 +6,10 @@
 #include <stdbool.h>
 #include "logging.h"
 
+#define ERROR_SUCCESS 0
+#define ERROR_OVERFLOW 1
+#define ERROR_UNDERFLOW -1
+
 typedef void 				(*Py_Initialize_t)					(void);
 typedef void 				(*Py_Finalize_t)					(void);
 typedef PyObject*			(*PyObject_GetIter_t)				(PyObject *);
@@ -25,6 +29,8 @@ typedef PyObject* 			(*PyRun_String_t)					(const char *, int start, PyObject *g
 typedef PyObject* 			(*PyImport_AddModule_t)				(const char *name);
 typedef PyObject* 			(*PyModule_GetDict_t)				(PyObject *module);
 typedef void 				(*PyErr_Print_t)					(void);
+typedef int 				(*PyDict_Next_t)					(PyObject *, Py_ssize_t*, PyObject **, PyObject **);
+typedef Py_ssize_t			(*PyTuple_Size_t)					(PyObject *);
 
 #define PY3_PyList_New PyList_New 
 #define PY3_PyList_SetItem PyList_SetItem
@@ -36,6 +42,10 @@ typedef void 				(*PyErr_Print_t)					(void);
 #define PY3_PyComplex_FromDoubles PyComplex_FromDoubles
 #define PY3_PyArg_ParseTuple PyArg_ParseTuple
 #define PY3_PyErr_WarnEx PyErr_WarnEx
+#define PY3_PyDict_New PyDict_New
+#define PY3_PyDict_SetItem PyDict_SetItem
+#define PY3_PyTuple_New PyTuple_New
+#define PY3_PyTuple_SetItem PyTuple_SetItem
 
 bool Py2IsInitialized();
 bool LoadPython2AndInitFuncs(const char *pFilePath);
@@ -69,6 +79,7 @@ PyRun_String_t					PY2_PyRun_String;
 PyModule_GetDict_t				PY2_PyModule_GetDict;
 PyImport_AddModule_t			PY2_PyImport_AddModule;
 PyErr_Print_t					PY2_PyErr_Print;
-
+PyDict_Next_t					PY2_PyDict_Next;
+PyTuple_Size_t					PY2_PyTuple_Size;
 
 #endif // MARSHAL_UTILS_h__

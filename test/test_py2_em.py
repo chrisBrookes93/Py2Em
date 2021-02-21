@@ -10,10 +10,8 @@ LONG_MAX = 2147483647
 class IntegrationTests(unittest.TestCase):
 
     def setUp(self):
-        try:
+        if Py2Emulator.is_initialized():
             Py2Emulator.finalize()
-        except RuntimeError:
-            pass
 
     def test_exec_is_not_initialized(self):
         expected_error = 'Interpreter is not Initialized.'
@@ -217,13 +215,16 @@ class DivClass:
         self.assertEqual(expected_val, actual_val)
 
     def test_eval_return_unicode(self):
-        raise NotImplementedError
-    #     expected_val = u'µµµµµµµ'
-    #
-    #     with Py2Emulator() as py2em:
-    #         actual_val = py2em.eval('u"{}"'.format(expected_val))
-    #
-    #     self.assertEqual(expected_val, actual_val)
+        import base64
+        expected_val = 'µ, ж, з, к, л'
+        input_val = "a = base64.b64decode(u'{}')".format(base64.b64encode(expected_val.encode('utf-8')).decode('utf-8'))
+        with Py2Emulator() as py2em:
+            py2em.exec("import base64")
+            py2em.exec(input_val)
+            py2em.exec('print(type(a))')
+            actual_val = py2em.eval('a')
+
+        self.assertEqual(expected_val, actual_val)
 
     def test_eval_return_none(self):
 
@@ -295,6 +296,14 @@ class DivClass:
         self.assertIsInstance(actual_val, dict)
         self.assertDictEqual(expected_val, actual_val)
 
+    def test_eval_deeply_nested_structure(self):
+        expected_val = {'a': 1, 'c': [[[[[[[[[[[[[[(1, 2, {'d': 0, 'f': set([123, 456, 1.34, "a"])})]]]]]]]]]]]]]]}
+        with Py2Emulator() as py2em:
+            actual_val = py2em.eval(str(expected_val))
+
+        self.assertIsInstance(actual_val, dict)
+        self.assertDictEqual(expected_val, actual_val)
+
     def test_exec_invalid_syntax(self):
         with Py2Emulator() as py2em:
             self.assertRaisesRegex(SyntaxError,
@@ -308,7 +317,3 @@ class DivClass:
                                    'gfggfgd',
                                    py2em.eval,
                                    'invalid SYNTAX')
-
-
-# TODO - most tests raising /home/user1/.local/lib/python3.8/site-packages/py2_em/py2emulator.py:66: Warning: Interpreter is not Initialized.
-#   _py2_em.Finalize()

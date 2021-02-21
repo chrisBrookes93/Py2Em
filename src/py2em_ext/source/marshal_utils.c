@@ -77,12 +77,14 @@ bool InitializeFunctionPointers()
 	PY2_PyModule_GetDict = (PyModule_GetDict_t)GetPy2Func("PyModule_GetDict");
 	PY2_PyImport_AddModule = (PyImport_AddModule_t)GetPy2Func("PyImport_AddModule");
 	PY2_PyErr_Print = (PyErr_Print_t)GetPy2Func("PyErr_Print");
+	PY2_PyDict_Next = (PyDict_Next_t)GetPy2Func("PyDict_Next");
+	PY2_PyTuple_Size = (PyTuple_Size_t)GetPy2Func("PyTuple_Size");
 
-	// TODO - check that if the first fails, that the error isn't wiped out by a later one succeeding
 	if (!PY2_PyObject_GetIter || !PY2_PyIter_Next || !PY2_PyList_Size || !PY2_Py_Initialize || !PY2_Py_Finalize ||
 		!PY2_PyLong_AsLongAndOverflow || !PY2_PyLong_AsLongLongAndOverflow || !PY2_PyLong_AsUnsignedLongLong || !PY2_PyObject_IsTrue ||
 		!PY2_PyFloat_AsDouble || !PY2_PyComplex_RealAsDouble || !PY2_PyComplex_ImagAsDouble || !PY2_PyString_AsString || !PY2_PyObject_Str ||
-		!PY2_PyRun_String || !PY2_PyModule_GetDict || !PY2_PyImport_AddModule || !PY2_PyErr_Print) 
+		!PY2_PyRun_String || !PY2_PyModule_GetDict || !PY2_PyImport_AddModule || !PY2_PyErr_Print || !PY2_PyDict_Next || !PY2_PyTuple_Size
+		) 
 	{
 		Log("Failed to find one of the Python2 functions.\n");
 		UninitializeFunctionPointers();
@@ -111,6 +113,8 @@ void UninitializeFunctionPointers()
 	PY2_PyModule_GetDict = NULL;
 	PY2_PyImport_AddModule = NULL;
 	PY2_PyErr_Print = NULL;
+	PY2_PyDict_Next = NULL;
+	PY2_PyTuple_Size = NULL;
 	Log("Set all of the Python2 function pointers to NULL.\n");
 }
 
