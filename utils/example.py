@@ -2,25 +2,21 @@ from py2_em import Py2Emulator
 import sys
 
 # Initialize the Py2 interpreter
-print('--> Initializing py2_em')
+print('--> Initializing py2_em\n')
 Py2Emulator.initialize()
-print()
 
 print('--> Normal interpreter version is: ')
-print(sys.version)
-print()
+print(sys.version + '\n')
 
 print('--> py2_em interpreter version is: ')
-Py2Emulator.py2_exec('import sys;print(sys.version)')
-print()
+Py2Emulator.exec('import sys')
+print(Py2Emulator.eval('sys.version') + '\n')
 
 print('--> Normal interpreter\'s answer to "10/3" is: ')
-print(10 / 3)
-print()
+print(str(10 / 3) + '\n')
 
 print('--> py2_em interpreter\'s answer to "10/3" is: ')
-Py2Emulator.py2_exec('print(10 / 3)')
-print()
+print(Py2Emulator.eval('str(10 / 3)') + '\n')
 
-print('--> Finalizing py2_em')
+print('Finalizing py2_em')
 Py2Emulator.finalize()
