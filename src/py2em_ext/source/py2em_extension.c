@@ -1,51 +1,55 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <Python.h>
-
-#include "marshal_datatypes.h"
-#include "marshal_utils.h"
 #include "py2em_extension.h"
 
-
-static PyObject* IsInitialized(PyObject* self, PyObject* args)
+/**
+* Returns a bool indicating whether the Python2 emulator is initialized
+*
+* @param pSelf Unused
+* @param pArgs Unused
+* @return Python-encoded boolean indicating initialized state
+**/
+static PyObject* IsInitialized(PyObject *pSelf, PyObject *pArgs)
 {
 	Log("Enter C IsInitialized\n");
 	return PY3_Py_BuildValue("O", Py2IsInitialized() ? Py_True : Py_False);
 }
 
 /**
-* Invoke PyRun_SimpleString() from the loaded libpython SO file
+* Invoke PyRun_String() from the loaded libpython SO file.
+* This code is based upon Python/pythonrun.c#PyRun_SimpleStringFlags(). Note that PyRun_SimpleStringFlags() 
+* does not Py_DECREF the pointers returned by PyImport_AddModule("__main__") and PyModule_GetDict(), so we don't either.
 *
-* @param command Python command to execute
+* @param pCommand Python command to execute
+* @param start Evaluation mode (e.g. Py_eval_input)
+* @return Python-encoded result
 **/
-PyObject *RunString(const char *command, int start)
+PyObject *RunString(const char *pCommand, int start)
 {
 	Log("Enter C RunString\n");
-	Log("Importing __main__ to get the locals/globals...");
+	PyObject *pRetVal;
 	PyObject *pMainMod;
+	PyObject *pLocalsGlobals;
+	PyObject *pRunStrRes;
+
+	Log("Importing __main__ to get the locals/globals...");
+
+	// Examples in Python/pythonrun.c#PyRun_SimpleStringFlags() does not DECREF this object
 	pMainMod = PY2_PyImport_AddModule("__main__");
 	if (!pMainMod)
 	{
-		Log("TODO - PyImport_AddModule FAILED\n");
+		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to add module __main__");
 		return NULL;
 	}
-	Log("Success\nObtaining the variable dictionary...");
+	Log("Success.\nObtaining the variable dictionary...");
 
-	PyObject *pLocalsGlobals;
 	pLocalsGlobals = PY2_PyModule_GetDict(pMainMod);
 	if (!pLocalsGlobals)
 	{
-		Log("TODO - PyModule_GetDict FAILED\n");
+		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to get a handle to __main__ to obtain the local/global variables");
 		return NULL;
 	}
 	Log("Success.\nCalling PyRun_String()...");
 
-	PyObject* pRunStrRes = PY2_PyRun_String(command, start, pLocalsGlobals, pLocalsGlobals);
-
-	// TODO - dispose of dictionaries
-	// TODO - dispose of pRunStrRes
-
+	pRunStrRes = PY2_PyRun_String(pCommand, start, pLocalsGlobals, pLocalsGlobals);
 	if (!pRunStrRes)
 	{
 		Log("Failed. Printing Error:\n");
@@ -54,15 +58,17 @@ PyObject *RunString(const char *command, int start)
 	}
 	Log("Success.\n");
 
-
 	if (start == Py_eval_input)
 	{
 		Log("Marshalling return data...\n");
-		return MarshalObjectPy2ToPy3(pRunStrRes);
+		pRetVal = MarshalObjectPy2ToPy3(pRunStrRes);
+		PY2_Py_DECREF(pRunStrRes);
+		return pRetVal;
 	}
 	else
 	{
-		Log("We are not evaluating, so returning empty value (None)\n");
+		PY2_Py_DECREF(pRunStrRes);
+		// We are not evaluating, so return an empty (but not NULL) value
 		return PY3_Py_BuildValue("");
 	}
 }
@@ -70,26 +76,29 @@ PyObject *RunString(const char *command, int start)
 /**
 * Initialize the Python2 Interpreter. This is done by dynamically loading the shared library and invoking Py_Initialize()
 *
-* @param self Unused
-* @param args Argument dictionary
+* @param pSelf Unused
+* @param pArgs Argument dictionary
+* @return Python-encoded empty value
 **/
-static PyObject* Initialize(PyObject* self, PyObject* args)
+static PyObject* Initialize(PyObject *pSelf, PyObject *pArgs)
 {
-	Log("Enter C Initialize()\n");
+    Log("Enter C Initialize()\n");
+
+    char *pSo_filepath;
+
     if (Py2IsInitialized())
 	{
 		PY3_PyErr_WarnEx(PyExc_Warning, "Interpreter is already Initialized.", 1);
-		PY3_Py_BuildValue("");
+		return PY3_Py_BuildValue("");
 	}
 
-    char *so_filepath;
-	if (!PY3_PyArg_ParseTuple(args, "s", &so_filepath))
+	if (!PY3_PyArg_ParseTuple(pArgs, "s", &pSo_filepath))
 	{
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
 		return NULL;
 	}
-	;
-	if (!LoadPython2AndInitFuncs(so_filepath))
+	
+	if (!LoadPython2AndInitFuncs(pSo_filepath))
 	{
 	    // LoadPython27() should have set the error
 	    return NULL;
@@ -103,14 +112,17 @@ static PyObject* Initialize(PyObject* self, PyObject* args)
 /**
 * Execute a Python string in the Python2 interpreter
 *
-* @param self Unused
-* @param args Argument tuple containing the command to execute
+* @param pSelf Unused
+* @param pArgs Argument tuple containing the command to execute, and the execution mode
 **/
-static PyObject* Py2_Exec(PyObject* self, PyObject* args)
+static PyObject* Py2_Run(PyObject *pSelf, PyObject *pArgs)
 {
 	Log("Enter C Py2_Exec\n");
 
-	char *command;
+	char *pCommand;
+	int start;
+	int execMode;
+	PyObject *pRunResult;
 
 	if (!Py2IsInitialized(NULL, NULL))
 	{
@@ -118,61 +130,46 @@ static PyObject* Py2_Exec(PyObject* self, PyObject* args)
 		return NULL;
 	}
 
-	if (!PY3_PyArg_ParseTuple(args, "s", &command))
+	if (!PY3_PyArg_ParseTuple(pArgs, "si", &pCommand, &execMode))
 	{
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
 		return NULL;
 	}
 
-	Log("Command to exec: %s\n", command);
-
-
-	if (!RunString(command, Py_file_input))
+	if (execMode == EXEC_MODE_EVAL)
 	{
-		return NULL;
+		start = Py_eval_input;
+		Log("Command to eval: %s\n", pCommand);
+
 	}
-
-	return PY3_Py_BuildValue("");
-}
-
-/**
-* Evaluate a Python string in the Python2 interpreter
-*
-* @param self Unused
-* @param args Argument tuple containing the command to evaluate
-**/
-static PyObject* Py2_Eval(PyObject* self, PyObject* args)
-{
-	Log("Enter C Py2_Eval\n");
-
-	char *command;
-
-	if (!Py2IsInitialized())
+	else if (execMode == EXEC_MODE_EXEC)
 	{
-		PY3_PyErr_SetString(PyExc_RuntimeError, "Interpreter is not Initialized.");
-		return NULL;
+		start = Py_file_input;
+		Log("Command to exec: %s\n", pCommand);
 	}
-
-	if (!PyArg_ParseTuple(args, "s", &command))
+	else
 	{
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
 		return NULL;
 	}
-		Log("Command to exec: %s\n", command);
 
+	pRunResult = RunString(pCommand, start);
+	if (!pRunResult)
+	{
+		// RunString() should have cleaned up and set/printed the error value
+		return NULL;
+	}
 
-	PyObject * res = RunString(command, Py_eval_input);
-
-	return res;
+	return pRunResult;
 }
 
 /**
 * Finalize the Python2 Interpreter. This is done by invoking Py_Finalize() and closing the dynamically loaded SO file
 *
-* @param self Unused
-* @param args Unused
+* @param pSelf Unused
+* @param pArgs Unused
 **/
-static PyObject* Finalize(PyObject* self, PyObject* args)
+static PyObject* Finalize(PyObject *pSelf, PyObject *pArgs)
 {
 	Log("Enter C Finalize\n");
 	if (!Py2IsInitialized())
@@ -202,8 +199,7 @@ static PyObject* Finalize(PyObject* self, PyObject* args)
 static PyMethodDef mainMethods[] = {
 	{"Initialize", Initialize, METH_VARARGS, "Initialize the Python2.7 Interpreter"},
 	{"IsInitialized", IsInitialized, METH_VARARGS, "Check if the Python2.7 Interpreter is initialized"},
-	{"Py2_Exec", Py2_Exec, METH_VARARGS, "Execute a string in the Python2.7 interpreter"},
-	{"Py2_Eval", Py2_Eval, METH_VARARGS, "Evaluate a string in the Python2.7 interpreter"},
+	{"Py2_Run", Py2_Run, METH_VARARGS, "Execute or evaluate a string in the Python2.7 interpreter"},
 	{"Finalize", Finalize, METH_VARARGS, "Close the Python2.7 interpreter"},
 	{NULL, NULL, 0, NULL}
 };

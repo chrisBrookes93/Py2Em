@@ -1,5 +1,6 @@
 import unittest
 import warnings
+
 from py2_em import Py2Emulator
 
 ULLONG_MAX = 18446744073709551615
@@ -304,16 +305,8 @@ class DivClass:
         self.assertIsInstance(actual_val, dict)
         self.assertDictEqual(expected_val, actual_val)
 
-    def test_exec_invalid_syntax(self):
+    def test_invalid_syntax_handled_gracefully(self):
         with Py2Emulator() as py2em:
-            self.assertRaisesRegex(SyntaxError,
-                                   'gfggfgd',
-                                   py2em.exec,
-                                   'invalid SYNTAX')
-
-    def test_eval_invalid_syntax(self):
-        with Py2Emulator() as py2em:
-            self.assertRaisesRegex(SyntaxError,
-                                   'gfggfgd',
-                                   py2em.eval,
-                                   'invalid SYNTAX')
+            py2em.exec('invalid SYNTAX')
+            py2em.eval('invalid SYNTAX')
+            self.assertEqual(3, py2em.eval('1 + 2'))

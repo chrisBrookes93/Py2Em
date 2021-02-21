@@ -1,6 +1,8 @@
 #ifndef MARSHAL_UTILS_h__
 #define MARSHAL_UTILS_h__
 
+#define PY_SSIZE_T_CLEAN
+
 #include <dlfcn.h>
 #include <Python.h>
 #include <stdbool.h>
@@ -32,6 +34,7 @@ typedef void 				(*PyErr_Print_t)					(void);
 typedef int 				(*PyDict_Next_t)					(PyObject *, Py_ssize_t*, PyObject **, PyObject **);
 typedef Py_ssize_t			(*PyTuple_Size_t)					(PyObject *);
 
+// Aliases for the Python3 functions. As most Python functions exist in 2 & 3, using these makes it easier to distinguish in the code
 #define PY3_PyList_New PyList_New 
 #define PY3_PyList_SetItem PyList_SetItem
 #define PY3_PySet_New PySet_New

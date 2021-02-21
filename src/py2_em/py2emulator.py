@@ -1,5 +1,8 @@
 import _py2_em
 
+EXEC_MODE_EVAL = 0
+EXEC_MODE_EXEC = 1
+
 
 class Py2Emulator:
 
@@ -46,7 +49,7 @@ class Py2Emulator:
         :param exec_str: Python string to execute
         :type exec_str: str
         """
-        return _py2_em.Py2_Exec(exec_str)
+        return _py2_em.Py2_Run(exec_str, EXEC_MODE_EXEC)
 
     @staticmethod
     def eval(eval_str):
@@ -56,7 +59,7 @@ class Py2Emulator:
         :param eval_str: Python string to evaluate
         :type eval_str: str
         """
-        return _py2_em.Py2_Eval(eval_str)
+        return _py2_em.Py2_Run(eval_str, EXEC_MODE_EVAL)
 
     @staticmethod
     def finalize():

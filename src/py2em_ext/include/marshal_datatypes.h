@@ -1,6 +1,8 @@
 #ifndef MARSHAL_DATATYPES_h__
 #define MARSHAL_DATATYPES_h__
 
+#define PY_SSIZE_T_CLEAN
+
 #include <Python.h>
 #include "marshal_utils.h"
 #include "logging.h"
