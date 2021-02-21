@@ -1,8 +1,5 @@
 #include "marshal_datatypes.h"
 
-// TODO - In what cases (if any) do we need to dispose of the input item on failure
-
-
 /**
 * Marshals a Python2 PyObject* list into a Python3 PyObject* list
 *
@@ -29,7 +26,7 @@ PyObject *MarshalListPy2ToPy3(PyObject *py2List)
 		return NULL;
 	}
 	
-	// Get an interator to the py2 list
+	// Get an iterator to the py2 list
 	pPy2Iterator = PY2_PyObject_GetIter(py2List);
 	if (!pPy2Iterator)
 	{
@@ -95,7 +92,7 @@ PyObject *MarshalSetPy2ToPy3(PyObject *pPy2Obj)
 		return NULL;
 	}
 	
-	// Get an interator to the py2 set
+	// Get an iterator to the py2 set
 	pPy2Iterator = PY2_PyObject_GetIter(pPy2Obj);
 	if (!pPy2Iterator)
 	{
@@ -220,7 +217,7 @@ PyObject *MarshalTuplePy2ToPy3(PyObject *pPy2Obj)
 		return NULL;
 	}
 	
-	// Get an interator to the py2 list
+	// Get an iterator to the py2 list
 	pPy2Iterator = PY2_PyObject_GetIter(pPy2Obj);
 	if (!pPy2Iterator)
 	{
@@ -359,14 +356,14 @@ PyObject *MarshalComplexPy2ToPy3(PyObject *pPy2Obj)
 **/
 PyObject *MarshalStringPy2ToPy3(PyObject *pPy2Obj)
 {
-	char *cstr_val;
-	cstr_val = PY2_PyString_AsString(pPy2Obj);
-	if (!cstr_val)
+	char *pCStr_val;
+	pCStr_val = PY2_PyString_AsString(pPy2Obj);
+	if (!pCStr_val)
 	{
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to marshal string to Python3");
 		return NULL;
 	}
-	return PY3_Py_BuildValue("s", cstr_val);
+	return PY3_Py_BuildValue("s", pCStr_val);
 }
 
 /**
@@ -424,7 +421,8 @@ PyObject *MarshalObjectPy2ToPy3(PyObject *pPy2Obj)
 	else if (strcmp(typeName, "unicode") == STR_MATCH)
 	{
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Unicode marshalling not supported. Consider encoding return value");
-		return NULL;	}
+		return NULL;	
+	}
 	else
 	{
 		Log("Marshaling of this type is not supported, reverting to str() instead.\n");
