@@ -25,6 +25,28 @@ bool LoadPython2AndInitFuncs(const char *pFilePath)
 		Log("Python2 binary already loaded\n");
 		return true;
 	}
+	Log("Loading Python2 binary: %s...", pFilePath);
+
+	pGlobPyHandle = LoadLibrary(TEXT("python27.dll"));
+		Log("END of LoadLibrary call\n");
+
+	if (!pGlobPyHandle)
+	{
+		DWORD errorMessageID = GetLastError();
+		Log("Failed. Error: \n");
+		PyErr_SetString(PyExc_RuntimeError, "LOAD LIBRARY RETUREND NULL");
+		return false;
+	}
+			Log("LoadPython2AndInitFuncs() success!\n");
+
+    if (!InitializeFunctionPointers())
+	{
+		ClosePython27();
+		return false;
+	}
+#ifdef _WIN32
+
+#else
 
 	// Clear out any current error
 	(void)dlerror();
@@ -53,6 +75,7 @@ bool LoadPython2AndInitFuncs(const char *pFilePath)
 		ClosePython27();
 		return false;
 	}
+#endif
 
 	return true;
 }
@@ -66,8 +89,10 @@ bool InitializeFunctionPointers()
 {
 	if (!pGlobPyHandle)
 	{
+	    Log("GLOB HANDLE IS NULL\n");
 		return false;
 	}
+	    Log("Finding functions....\n");
 
 	// Initialize all of the function pointers
  	PY2_PyObject_GetIter = (PyObject_GetIter_t)GetPy2Func("PyObject_GetIter");
@@ -117,6 +142,8 @@ bool InitializeFunctionPointers()
 		UninitializeFunctionPointers();
 		return false;
 	}
+    Log("InitializeFunctionPointers() returned true\n");
+
 	return true;
 }
 
@@ -158,15 +185,30 @@ void *GetPy2Func(const char *pSymbolName)
 	void *pRetVal = NULL;
 	char *pError = NULL;
 
+	Log("Loading function %s() ...", pSymbolName);
 	if (!pGlobPyHandle)
 	{
+		Log("GLOB HANDLE IS NULL2\n");
 		return pRetVal;
 	}
+
+#ifdef _WIN32
+	pRetVal = (void *)GetProcAddress(pGlobPyHandle, pSymbolName);
+	if (!pRetVal)
+	{
+		PyErr_SetString(PyExc_RuntimeError, "GetProcAddress returned NULL");
+		Log("GetProcAddress returned NULL.\n");
+	}
+	else
+	{
+		Log("Success.\n");
+	}
+
+#else
 
 	// Clear out any current error
 	(void)dlerror();
 
-	Log("Loading function %s() ...", pSymbolName);
 	pRetVal = dlsym(pGlobPyHandle, pSymbolName);
 	pError = dlerror();
 
@@ -179,6 +221,7 @@ void *GetPy2Func(const char *pSymbolName)
 	{
 		Log("Success.\n");
 	}
+#endif
 	return pRetVal;
 }
 
@@ -191,6 +234,15 @@ bool ClosePython27()
 {
 	if (pGlobPyHandle)
 	{
+#ifdef _WIN32
+		BOOL fFreeResult;
+		fFreeResult = FreeLibrary(pGlobPyHandle);
+		if (!fFreeResult)
+		{
+			PyErr_WarnEx(PyExc_Warning, "Call to FreeLibrary failed!", 1);
+			return false;
+		}
+#else
 		Log("Calling dlclose() on the Python2 binary...");
 		int ret = dlclose(pGlobPyHandle);
 		if (ret != ERROR_SUCCESS)
@@ -204,6 +256,7 @@ bool ClosePython27()
 		{
 			Log("Success\n");
 		}
+#endif
 	}
 	else
 	{

@@ -4,11 +4,19 @@
 #define PY_SSIZE_T_CLEAN
 
 #include <stdbool.h>
-#include <dlfcn.h>
 #include <Python.h>
 #include "logging.h"
 
+#ifdef _WIN32
+#include <Windows.h>
+#else
+#include <dlfcn.h>
+#endif
+
+#ifndef ERROR_SUCCESS
 #define ERROR_SUCCESS 0
+#endif
+
 #define ERROR_OVERFLOW 1
 #define ERROR_UNDERFLOW -1
 
