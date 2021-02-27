@@ -1,7 +1,7 @@
 #include "marshal_utils.h"
 
 /**
-* Returns a bool indicating whether the Python2 interpreter is initialized. 
+* Returns a bool indicating whether the Python2 interpreter is initialized.
 * This is done by checking that the Python2 binary is loaded.
 *
 * @return bool indicating whether the Python2 binary is loaded
@@ -12,12 +12,12 @@ bool Py2IsInitialized()
 }
 
 /**
-* Load the libpython27.so file into memory via dlopen().
+* Load the Python2 binary into memory via dlopen/LoadLibrary and initialize the symbols.
 *
 * @param pFilePath Name or filepath. The name must be resolvable on the LD search path
 * @return bool indicating success
 **/
-bool LoadPython2AndInitFuncs(const char *pFilePath)
+bool LoadPy2AndResolveSymbols(const char* pFilePath)
 {
 	// Check if we're already loaded!
 	if (pGlobPyHandle)
@@ -25,10 +25,12 @@ bool LoadPython2AndInitFuncs(const char *pFilePath)
 		Log("Python2 binary already loaded\n");
 		return true;
 	}
+
 	Log("Loading Python2 binary: %s...", pFilePath);
 
-	pGlobPyHandle = LoadLibrary(TEXT("python27.dll"));
-		Log("END of LoadLibrary call\n");
+#ifdef _WIN32
+
+	pGlobPyHandle = LoadLibrary(TEXT(pFilePath));
 
 	if (!pGlobPyHandle)
 	{
@@ -37,29 +39,20 @@ bool LoadPython2AndInitFuncs(const char *pFilePath)
 		PyErr_SetString(PyExc_RuntimeError, "LOAD LIBRARY RETUREND NULL");
 		return false;
 	}
-			Log("LoadPython2AndInitFuncs() success!\n");
-
-    if (!InitializeFunctionPointers())
-	{
-		ClosePython27();
-		return false;
-	}
-#ifdef _WIN32
 
 #else
 
 	// Clear out any current error
 	(void)dlerror();
-	Log("Loading Python2 binary: %s...", pFilePath);
 
 	// This has to be DEEPBIND because within our Python3 extension there are already functions like Py_Initialize().
 	// In order to make sure we call the functions in the Py2 .so file, we need to specify RTLD_DEEPBIND to place the
 	// lookup scope ahead of the globals
 	pGlobPyHandle = dlopen(pFilePath, RTLD_NOW | RTLD_DEEPBIND);
 
-	char *pError = NULL;
+	char* pError = NULL;
 	pError = dlerror();
-	if (!pGlobPyHandle || pError) 
+	if (!pGlobPyHandle || pError)
 	{
 		Log("Failed. Error: %s\n", pError);
 		PyErr_SetString(PyExc_RuntimeError, pError);
@@ -70,109 +63,88 @@ bool LoadPython2AndInitFuncs(const char *pFilePath)
 		Log("Success.\n", pFilePath);
 	}
 
-	if (!InitializeFunctionPointers())
+#endif
+
+	if (!InitializePy2Symbols())
 	{
-		ClosePython27();
+		ClosePy27();
 		return false;
 	}
-#endif
 
 	return true;
 }
 
 /**
-* Initialize all of the Python2 function pointers. This is done in one central place for convenience and tidiness.
+* Initialize all of the Python2 symbol pointers. This is done in one central place for convenience and tidiness.
 *
 * @return bool indicating success
 **/
-bool InitializeFunctionPointers()
+bool InitializePy2Symbols()
 {
 	if (!pGlobPyHandle)
 	{
-	    Log("GLOB HANDLE IS NULL\n");
+		Log("Python2 binary is not loaded.\n");
 		return false;
 	}
-	    Log("Finding functions....\n");
+	Log("Finding Py2 symbols....\n");
 
-	// Initialize all of the function pointers
- 	PY2_PyObject_GetIter = (PyObject_GetIter_t)GetPy2Func("PyObject_GetIter");
- 	PY2_PyIter_Next = (PyIter_Next_t)GetPy2Func("PyIter_Next");
-	PY2_PyList_Size = (PyList_Size_t)GetPy2Func("PyList_Size");
-	PY2_Py_Initialize = (Py_Initialize_t)GetPy2Func("Py_Initialize");
-	PY2_Py_Finalize = (Py_Finalize_t)GetPy2Func("Py_Finalize");
-	PY2_PyLong_AsLongAndOverflow = (PyLong_AsLongAndOverflow_t)GetPy2Func("PyLong_AsLongAndOverflow");
-	PY2_PyLong_AsLongLongAndOverflow = (PyLong_AsLongLongAndOverflow_t)GetPy2Func("PyLong_AsLongLongAndOverflow");
-	PY2_PyLong_AsUnsignedLongLong = (PyLong_AsUnsignedLongLong_t)GetPy2Func("PyLong_AsUnsignedLongLong");
-	PY2_PyObject_IsTrue = (PyObject_IsTrue_t)GetPy2Func("PyObject_IsTrue");
-	PY2_PyFloat_AsDouble = (PyFloat_AsDouble_t)GetPy2Func("PyFloat_AsDouble");
-	PY2_PyComplex_RealAsDouble = (PyComplex_RealAsDouble_t)GetPy2Func("PyComplex_RealAsDouble");
-	PY2_PyComplex_ImagAsDouble = (PyComplex_ImagAsDouble_t)GetPy2Func("PyComplex_ImagAsDouble");
-	PY2_PyString_AsString = (PyString_AsString_t)GetPy2Func("PyString_AsString");
-	PY2_PyObject_Str = (PyObject_Str_t)GetPy2Func("PyObject_Str");
-	PY2_PyRun_String = (PyRun_String_t)GetPy2Func("PyRun_String");
-	PY2_PyModule_GetDict = (PyModule_GetDict_t)GetPy2Func("PyModule_GetDict");
-	PY2_PyImport_AddModule = (PyImport_AddModule_t)GetPy2Func("PyImport_AddModule");
-	PY2_PyErr_Print = (PyErr_Print_t)GetPy2Func("PyErr_Print");
-	PY2_PyDict_Next = (PyDict_Next_t)GetPy2Func("PyDict_Next");
-	PY2_PyTuple_Size = (PyTuple_Size_t)GetPy2Func("PyTuple_Size");
-	PY2_Py_SetPythonHome = (Py_SetPythonHome_t)GetPy2Func("Py_SetPythonHome");
-	PY2_Py_SetProgramName = (Py_SetProgramName_t)GetPy2Func("Py_SetProgramName");
-	PY2_PySys_SetPath = (PySys_SetPath_t)GetPy2Func("PySys_SetPath");
-	PY2_Py_GetPath = (Py_GetPath_t)GetPy2Func("Py_GetPath");
-	PY2_PySys_SetArgvEx = (PySys_SetArgvEx_t)GetPy2Func("PySys_SetArgvEx");
-	PY2_Py_GetProgramName = (Py_GetProgramName_t)GetPy2Func("Py_GetProgramName");
-	PY2_PyInterpreterState_New = (PyInterpreterState_New_t)GetPy2Func("PyInterpreterState_New");
-	PY2_PyThreadState_New = (PyThreadState_New_t)GetPy2Func("PyThreadState_New");
-	PY2_PyThreadState_Swap = (PyThreadState_Swap_t)GetPy2Func("PyThreadState_Swap");
-	PY2_Py_GetPythonHome = (Py_GetPythonHome_t)GetPy2Func("Py_GetPythonHome");
-	PY2_Py_NoSiteFlag = (int *)GetPy2Func("Py_NoSiteFlag");
+	// Initialize all of the symbols 
+	PY2_PyObject_GetIter = (PyObject_GetIter_t)GetPy2Symbol("PyObject_GetIter");
+	PY2_PyIter_Next = (PyIter_Next_t)GetPy2Symbol("PyIter_Next");
+	PY2_PyList_Size = (PyList_Size_t)GetPy2Symbol("PyList_Size");
+	PY2_Py_Initialize = (Py_Initialize_t)GetPy2Symbol("Py_Initialize");
+	PY2_Py_Finalize = (Py_Finalize_t)GetPy2Symbol("Py_Finalize");
+	PY2_PyLong_AsLongAndOverflow = (PyLong_AsLongAndOverflow_t)GetPy2Symbol("PyLong_AsLongAndOverflow");
+	PY2_PyLong_AsLongLongAndOverflow = (PyLong_AsLongLongAndOverflow_t)GetPy2Symbol("PyLong_AsLongLongAndOverflow");
+	PY2_PyLong_AsUnsignedLongLong = (PyLong_AsUnsignedLongLong_t)GetPy2Symbol("PyLong_AsUnsignedLongLong");
+	PY2_PyObject_IsTrue = (PyObject_IsTrue_t)GetPy2Symbol("PyObject_IsTrue");
+	PY2_PyFloat_AsDouble = (PyFloat_AsDouble_t)GetPy2Symbol("PyFloat_AsDouble");
+	PY2_PyComplex_RealAsDouble = (PyComplex_RealAsDouble_t)GetPy2Symbol("PyComplex_RealAsDouble");
+	PY2_PyComplex_ImagAsDouble = (PyComplex_ImagAsDouble_t)GetPy2Symbol("PyComplex_ImagAsDouble");
+	PY2_PyString_AsString = (PyString_AsString_t)GetPy2Symbol("PyString_AsString");
+	PY2_PyObject_Str = (PyObject_Str_t)GetPy2Symbol("PyObject_Str");
+	PY2_PyRun_String = (PyRun_String_t)GetPy2Symbol("PyRun_String");
+	PY2_PyModule_GetDict = (PyModule_GetDict_t)GetPy2Symbol("PyModule_GetDict");
+	PY2_PyImport_AddModule = (PyImport_AddModule_t)GetPy2Symbol("PyImport_AddModule");
+	PY2_PyErr_Print = (PyErr_Print_t)GetPy2Symbol("PyErr_Print");
+	PY2_PyDict_Next = (PyDict_Next_t)GetPy2Symbol("PyDict_Next");
+	PY2_PyTuple_Size = (PyTuple_Size_t)GetPy2Symbol("PyTuple_Size");
+	PY2_Py_SetPythonHome = (Py_SetPythonHome_t)GetPy2Symbol("Py_SetPythonHome");
 
-	if (!PY2_PyObject_GetIter || 
-		!PY2_PyIter_Next || 
-		!PY2_PyList_Size || 
-		!PY2_Py_Initialize || 
+	if (!PY2_PyObject_GetIter ||
+		!PY2_PyIter_Next ||
+		!PY2_PyList_Size ||
+		!PY2_Py_Initialize ||
 		!PY2_Py_Finalize ||
-		!PY2_PyLong_AsLongAndOverflow || 
-		!PY2_PyLong_AsLongLongAndOverflow || 
-		!PY2_PyLong_AsUnsignedLongLong || 
+		!PY2_PyLong_AsLongAndOverflow ||
+		!PY2_PyLong_AsLongLongAndOverflow ||
+		!PY2_PyLong_AsUnsignedLongLong ||
 		!PY2_PyObject_IsTrue ||
-		!PY2_PyFloat_AsDouble || 
-		!PY2_PyComplex_RealAsDouble || 
-		!PY2_PyComplex_ImagAsDouble || 
-		!PY2_PyString_AsString || 
+		!PY2_PyFloat_AsDouble ||
+		!PY2_PyComplex_RealAsDouble ||
+		!PY2_PyComplex_ImagAsDouble ||
+		!PY2_PyString_AsString ||
 		!PY2_PyObject_Str ||
-		!PY2_PyRun_String || 
-		!PY2_PyModule_GetDict || 
-		!PY2_PyImport_AddModule || 
-		!PY2_PyErr_Print || 
-		!PY2_PyDict_Next || 
+		!PY2_PyRun_String ||
+		!PY2_PyModule_GetDict ||
+		!PY2_PyImport_AddModule ||
+		!PY2_PyErr_Print ||
+		!PY2_PyDict_Next ||
 		!PY2_PyTuple_Size ||
-		!PY2_Py_SetPythonHome ||
-		!PY2_Py_SetProgramName ||
-		!PY2_PySys_SetPath ||
-		!PY2_Py_GetPath ||
-		!PY2_PySys_SetArgvEx ||
-		!PY2_Py_GetProgramName ||
-		!PY2_PyInterpreterState_New ||
-		!PY2_PyThreadState_New ||
-		!PY2_PyThreadState_Swap ||
-		!PY2_Py_GetPythonHome ||
-		!PY2_Py_NoSiteFlag
-		) 
+		!PY2_Py_SetPythonHome)
 	{
-		Log("Failed to find one of the Python2 functions.\n");
-		UninitializeFunctionPointers();
+		Log("Failed to find one of the Python2 symbols.\n");
+		UninitializePy2Symbols();
 		return false;
 	}
-    Log("InitializeFunctionPointers() returned true\n");
 
 	return true;
 }
 
 /**
-* Sets all of the Python2 function pointers to NULL
+* Sets all of the Python2 symbol pointers to NULL
 **/
-void UninitializeFunctionPointers()
+void UninitializePy2Symbols()
 {
 	PY2_PyObject_GetIter = NULL;
 	PY2_PyIter_Next = NULL;
@@ -195,25 +167,18 @@ void UninitializeFunctionPointers()
 	PY2_PyDict_Next = NULL;
 	PY2_PyTuple_Size = NULL;
 	PY2_Py_SetPythonHome = NULL;
-	PY2_Py_SetProgramName = NULL;
-	PY2_PySys_SetPath = NULL;
-	PY2_Py_GetPath = NULL;
-	PY2_PySys_SetArgvEx = NULL;
-	PY2_Py_GetProgramName = NULL;
-	PY2_PyInterpreterState_New = NULL;
-	PY2_Py_GetPythonHome = NULL;
 	Log("Set all of the Python2 function pointers to NULL.\n");
 }
 
 /**
-* Performs a dlsym() on the loaded Python2 binary and returns the symbol asked for (or NULL)
+* Performs a dlsym/GetProcAddress on the loaded Python2 binary and returns the symbol asked for (or NULL)
 *
 * @returns void* pointer to the desired function (or NULL)
 **/
-void *GetPy2Func(const char *pSymbolName)
+void* GetPy2Symbol(const char* pSymbolName)
 {
-	void *pRetVal = NULL;
-	char *pError = NULL;
+	void* pRetVal = NULL;
+	char* pError = NULL;
 
 	Log("Loading function %s() ...", pSymbolName);
 	if (!pGlobPyHandle)
@@ -223,7 +188,7 @@ void *GetPy2Func(const char *pSymbolName)
 	}
 
 #ifdef _WIN32
-	pRetVal = (void *)GetProcAddress(pGlobPyHandle, pSymbolName);
+	pRetVal = (void*)GetProcAddress(pGlobPyHandle, pSymbolName);
 	if (!pRetVal)
 	{
 		PyErr_SetString(PyExc_RuntimeError, "GetProcAddress returned NULL");
@@ -260,7 +225,7 @@ void *GetPy2Func(const char *pSymbolName)
 *
 * @returns bool indicating success
 **/
-bool ClosePython27()
+bool ClosePy27()
 {
 	if (pGlobPyHandle)
 	{
@@ -292,7 +257,7 @@ bool ClosePython27()
 	{
 		Log("Python2 binary is not loaded.\n");
 	}
-	UninitializeFunctionPointers();
+	UninitializePy2Symbols();
 	pGlobPyHandle = NULL;
 	return true;
 }

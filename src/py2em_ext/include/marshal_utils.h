@@ -8,6 +8,7 @@
 #include "logging.h"
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #else
 #include <dlfcn.h>
@@ -44,19 +45,6 @@ typedef void 				(*PyErr_Print_t)					(void);
 typedef int 				(*PyDict_Next_t)					(PyObject *, Py_ssize_t*, PyObject **, PyObject **);
 typedef Py_ssize_t			(*PyTuple_Size_t)					(PyObject *);
 typedef void                (*Py_SetPythonHome_t)               (const wchar_t *);
-typedef void                (*Py_SetProgramName_t)              (char *);
-typedef void                (*PySys_SetPath_t)                  (char *path);
-typedef char*               (*Py_GetPath_t)                     (void);
-typedef void                (*PySys_SetArgvEx_t)                (int, char **, int);
-typedef char*               (*Py_GetProgramName_t)              (void);
-typedef PyInterpreterState* (*PyInterpreterState_New_t)         (void);
-typedef PyThreadState*      (*PyThreadState_New_t)              (PyInterpreterState *);
-typedef PyThreadState*      (*PyThreadState_Swap_t)             (PyThreadState *);
-typedef char*               (*Py_GetPythonHome_t)               (void);
-typedef int*                Py_NoSiteFlag_t;
-
-
-
 
 // Aliases for the Python3 functions. As most Python functions exist in 2 & 3, using these makes it easier to distinguish in the code
 #define PY3_PyList_New PyList_New 
@@ -75,15 +63,15 @@ typedef int*                Py_NoSiteFlag_t;
 #define PY3_PyTuple_SetItem PyTuple_SetItem
 
 bool Py2IsInitialized();
-bool LoadPython2AndInitFuncs(const char *pFilePath);
-bool InitializeFunctionPointers();
-void UninitializeFunctionPointers();
-void *GetPy2Func(const char *pSymbolName);
-bool ClosePython27();
+bool LoadPy2AndResolveSymbols(const char *pFilePath);
+bool InitializePy2Symbols();
+void UninitializePy2Symbols();
+void *GetPy2Symbol(const char *pSymbolName);
+bool ClosePy27();
 
 
 /**
-* Handle to the libpython2.7.so file
+* Handle to the Python2 binary
 **/
 void *pGlobPyHandle;
 
@@ -111,15 +99,5 @@ PyErr_Print_t					PY2_PyErr_Print;
 PyDict_Next_t					PY2_PyDict_Next;
 PyTuple_Size_t					PY2_PyTuple_Size;
 Py_SetPythonHome_t              PY2_Py_SetPythonHome;
-Py_SetProgramName_t             PY2_Py_SetProgramName;
-PySys_SetPath_t                 PY2_PySys_SetPath;
-Py_GetPath_t                    PY2_Py_GetPath;
-PySys_SetArgvEx_t               PY2_PySys_SetArgvEx;
-Py_GetProgramName_t             PY2_Py_GetProgramName;
-PyInterpreterState_New_t        PY2_PyInterpreterState_New;
-PyThreadState_New_t             PY2_PyThreadState_New;
-PyThreadState_Swap_t            PY2_PyThreadState_Swap;
-Py_GetPythonHome_t              PY2_Py_GetPythonHome;
-Py_NoSiteFlag_t                 PY2_Py_NoSiteFlag;
 
 #endif // MARSHAL_UTILS_h__

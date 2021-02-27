@@ -16,7 +16,7 @@ with open('README.md', 'r') as fp:
 setup(
     name='py2_em',
     version='1.0',
-    description='Execute Python code in an emulated Python2.7 terminal (within Python3)',
+    description='Execute Python code in an emulated Python2 terminal (within Python3)',
     ext_modules=[native_module],
     author='Chris Brookes',
     author_email='chris_b_856@hotmail.com',
