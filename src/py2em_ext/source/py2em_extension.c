@@ -91,21 +91,31 @@ static PyObject* Initialize(PyObject *pSelf, PyObject *pArgs)
 		PY3_PyErr_WarnEx(PyExc_Warning, "Interpreter is already Initialized.", 1);
 		return PY3_Py_BuildValue("");
 	}
+	 Log("B\n");
+
 
 	if (!PY3_PyArg_ParseTuple(pArgs, "s", &pSo_filepath))
 	{
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
 		return NULL;
 	}
+	Log("C\n");
 	
 	if (!LoadPython2AndInitFuncs(pSo_filepath))
 	{
 	    // LoadPython27() should have set the error
 	    return NULL;
 	}
+	Log("D\n");
+   const wchar_t *home = "C:\\Python27";
+   PY2_Py_SetPythonHome(home);
 
+  // static Py_NoSiteFlag=1;
+    *PY2_Py_NoSiteFlag = 1;
+   // *pPy_NoSiteFlag = 1;
 	PY2_Py_Initialize();
-
+	Log("E\n");
+    //PY2_PySys_SetPath("C:\\Python27\\");
 	return PY3_Py_BuildValue("");
 }
 

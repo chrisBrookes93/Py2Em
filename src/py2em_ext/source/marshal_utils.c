@@ -115,6 +115,17 @@ bool InitializeFunctionPointers()
 	PY2_PyErr_Print = (PyErr_Print_t)GetPy2Func("PyErr_Print");
 	PY2_PyDict_Next = (PyDict_Next_t)GetPy2Func("PyDict_Next");
 	PY2_PyTuple_Size = (PyTuple_Size_t)GetPy2Func("PyTuple_Size");
+	PY2_Py_SetPythonHome = (Py_SetPythonHome_t)GetPy2Func("Py_SetPythonHome");
+	PY2_Py_SetProgramName = (Py_SetProgramName_t)GetPy2Func("Py_SetProgramName");
+	PY2_PySys_SetPath = (PySys_SetPath_t)GetPy2Func("PySys_SetPath");
+	PY2_Py_GetPath = (Py_GetPath_t)GetPy2Func("Py_GetPath");
+	PY2_PySys_SetArgvEx = (PySys_SetArgvEx_t)GetPy2Func("PySys_SetArgvEx");
+	PY2_Py_GetProgramName = (Py_GetProgramName_t)GetPy2Func("Py_GetProgramName");
+	PY2_PyInterpreterState_New = (PyInterpreterState_New_t)GetPy2Func("PyInterpreterState_New");
+	PY2_PyThreadState_New = (PyThreadState_New_t)GetPy2Func("PyThreadState_New");
+	PY2_PyThreadState_Swap = (PyThreadState_Swap_t)GetPy2Func("PyThreadState_Swap");
+	PY2_Py_GetPythonHome = (Py_GetPythonHome_t)GetPy2Func("Py_GetPythonHome");
+	PY2_Py_NoSiteFlag = (int *)GetPy2Func("Py_NoSiteFlag");
 
 	if (!PY2_PyObject_GetIter || 
 		!PY2_PyIter_Next || 
@@ -135,7 +146,18 @@ bool InitializeFunctionPointers()
 		!PY2_PyImport_AddModule || 
 		!PY2_PyErr_Print || 
 		!PY2_PyDict_Next || 
-		!PY2_PyTuple_Size
+		!PY2_PyTuple_Size ||
+		!PY2_Py_SetPythonHome ||
+		!PY2_Py_SetProgramName ||
+		!PY2_PySys_SetPath ||
+		!PY2_Py_GetPath ||
+		!PY2_PySys_SetArgvEx ||
+		!PY2_Py_GetProgramName ||
+		!PY2_PyInterpreterState_New ||
+		!PY2_PyThreadState_New ||
+		!PY2_PyThreadState_Swap ||
+		!PY2_Py_GetPythonHome ||
+		!PY2_Py_NoSiteFlag
 		) 
 	{
 		Log("Failed to find one of the Python2 functions.\n");
@@ -172,6 +194,14 @@ void UninitializeFunctionPointers()
 	PY2_PyErr_Print = NULL;
 	PY2_PyDict_Next = NULL;
 	PY2_PyTuple_Size = NULL;
+	PY2_Py_SetPythonHome = NULL;
+	PY2_Py_SetProgramName = NULL;
+	PY2_PySys_SetPath = NULL;
+	PY2_Py_GetPath = NULL;
+	PY2_PySys_SetArgvEx = NULL;
+	PY2_Py_GetProgramName = NULL;
+	PY2_PyInterpreterState_New = NULL;
+	PY2_Py_GetPythonHome = NULL;
 	Log("Set all of the Python2 function pointers to NULL.\n");
 }
 
