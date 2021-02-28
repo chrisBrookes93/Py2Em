@@ -3,6 +3,35 @@ on: [push, pull_request]
 
 jobs:
 
+  ubuntu_2004:
+    name: Test against Ubuntu 2004
+    runs-on: ubuntu-20.04
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install python2.7 libpython2.7-dev python3-pip
+      - name: Install the Package
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install wheel virtualenv
+          pip3 install .[dev]
+      - name: Run the unit tests on native Python
+        run: |
+          python3 -m pytest -v test
+      - name: Run the unit tests against a Py2 virtual environment
+        run: |
+          virtualenv py2_env -p /usr/bin/python2.7
+          python3 -m pytest -v test
+        env:
+          PY2_HOME: py2_env
+      - name: Run the example script
+        run: python3 utils/example.py
+
   win_10:
     name: Test against Windows Server 2019
     runs-on: windows-2019
@@ -16,8 +45,6 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install wheel virtualenv
           pip3 install .[dev]
-      - name: Run the example script x64
-        run: python3 utils\example.py C:\hostedtoolcache\windows\Python\2.7.18\x64
       - name: Run the unit tests on native Python
         run: |
           python3 -m pytest -v test
@@ -29,3 +56,5 @@ jobs:
           python3 -m pytest -v test
         env:
           PY2_HOME: py2_env
+      - name: Run the example script x64
+        run: python3 utils\example.py C:\hostedtoolcache\windows\Python\2.7.18\x64

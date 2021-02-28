@@ -340,10 +340,10 @@ class DivClass:
             self.assertEqual(3, py2em.eval('1 + 2'))
 
     def test_invalid_python_home(self):
-        with self.assertRaisesRegexp(ImportError, 'Py2 Interpreter failed to import the \'site\' module. Have you set '
-                                                  'the py2_home correctly\\?. Exception caught'):
+        with self.assertRaisesRegex(ImportError, 'Py2 Interpreter failed to import the \'site\' module. Have you set '
+                                                 'the py2_home correctly\\?. Exception caught'):
             Py2Emulator.initialize(py2_home='C:/NOT_EXIST')
 
     def test_invalid_py2_binary(self):
-        with self.assertRaisesRegexp(RuntimeError, 'Failed to find Python2 binary at'):
+        with self.assertRaisesRegex(RuntimeError, 'Failed to find Python2 binary at'):
             Py2Emulator.initialize(py2_home=self.py2_home, py2_binary_path='C:\\NOT_EXIST')
