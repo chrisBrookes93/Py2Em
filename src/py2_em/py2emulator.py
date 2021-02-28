@@ -51,7 +51,7 @@ class Py2Emulator:
         if platform.system().lower() == 'windows':
             return 'C:\\Python27'
         else:
-            return None
+            return ''
 
     @staticmethod
     def is_initialized():

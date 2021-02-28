@@ -101,13 +101,17 @@ static PyObject* Initialize(PyObject* pSelf, PyObject* pArgs)
 
 	if (!LoadPy2AndResolveSymbols(pPy2BinaryPath))
 	{
-		// LoadPython27() should have set the error
+		// LoadPy2AndResolveSymbols() should have set the error
 		return NULL;
 	}
-	if (pPy2Home)
+	if (pPy2Home && strcmp(pPy2Home, "") != 0)
 	{
 	    Log("Setting Python home to: %s\n", pPy2Home);
 		PY2_Py_SetPythonHome(pPy2Home);
+	}
+	else
+	{
+	    Log("Python home not provided");
 	}
 
 	PY2_Py_Initialize();
