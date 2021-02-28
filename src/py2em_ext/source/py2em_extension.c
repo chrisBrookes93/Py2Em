@@ -29,6 +29,7 @@ PyObject* RunString(const char* pCommand, int start)
 	PyObject* pMainMod;
 	PyObject* pLocalsGlobals;
 	PyObject* pRunStrRes;
+    char *pErrorStr;
 
 	Log("Importing __main__ to get the locals/globals...");
 
@@ -52,9 +53,25 @@ PyObject* RunString(const char* pCommand, int start)
 	pRunStrRes = PY2_PyRun_String(pCommand, start, pLocalsGlobals, pLocalsGlobals);
 	if (!pRunStrRes)
 	{
-		Log("Failed. Printing Error:\n");
-		PY2_PyErr_Print();
-		return PY3_Py_BuildValue("");
+	    PyObject *pType, *pValue, *pTraceback;
+	    Log("Failed. Resolving exception...\n");
+        PY2_PyErr_Fetch(&pType, &pValue, &pTraceback);
+        if (pValue)
+        {
+            PyObject* pObjErrStr;
+		    pObjErrStr = PY2_PyObject_Str(pValue);
+            pErrorStr = PY2_PyString_AsString(pObjErrStr);
+            PY2_Py_XDECREF(pType);
+            PY2_Py_XDECREF(pValue);
+            PY2_Py_XDECREF(pTraceback);
+            PY2_Py_XDECREF(pObjErrStr);
+        }
+        else
+        {
+            pErrorStr = "Py2 Exception occurred but failed to resolve it";
+        }
+        PY3_PyErr_SetString(PyExc_RuntimeError, pErrorStr);
+		return NULL;
 	}
 	Log("Success.\n");
 

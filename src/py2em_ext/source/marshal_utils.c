@@ -110,6 +110,7 @@ bool InitializePy2Symbols()
 	PY2_PyDict_Next = (PyDict_Next_t)GetPy2Symbol("PyDict_Next");
 	PY2_PyTuple_Size = (PyTuple_Size_t)GetPy2Symbol("PyTuple_Size");
 	PY2_Py_SetPythonHome = (Py_SetPythonHome_t)GetPy2Symbol("Py_SetPythonHome");
+	PY2_PyErr_Fetch = (PyErr_Fetch_t)GetPy2Symbol("PyErr_Fetch");
 
 	if (!PY2_PyObject_GetIter ||
 		!PY2_PyIter_Next ||
@@ -131,7 +132,8 @@ bool InitializePy2Symbols()
 		!PY2_PyErr_Print ||
 		!PY2_PyDict_Next ||
 		!PY2_PyTuple_Size ||
-		!PY2_Py_SetPythonHome)
+		!PY2_Py_SetPythonHome ||
+		!PY2_PyErr_Fetch)
 	{
 		Log("Failed to find one of the Python2 symbols.\n");
 		UninitializePy2Symbols();
@@ -167,6 +169,7 @@ void UninitializePy2Symbols()
 	PY2_PyDict_Next = NULL;
 	PY2_PyTuple_Size = NULL;
 	PY2_Py_SetPythonHome = NULL;
+	PY2_PyErr_Fetch = NULL;
 	Log("Set all of the Python2 function pointers to NULL.\n");
 }
 

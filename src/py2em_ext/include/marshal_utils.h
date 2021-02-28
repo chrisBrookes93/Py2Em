@@ -44,7 +44,8 @@ typedef PyObject* 			(*PyModule_GetDict_t)				(PyObject *module);
 typedef void 				(*PyErr_Print_t)					(void);
 typedef int 				(*PyDict_Next_t)					(PyObject *, Py_ssize_t*, PyObject **, PyObject **);
 typedef Py_ssize_t			(*PyTuple_Size_t)					(PyObject *);
-typedef void                (*Py_SetPythonHome_t)               (const wchar_t *);
+typedef void                (*Py_SetPythonHome_t)               (const char *);
+typedef void                (*PyErr_Fetch_t)                    (PyObject **, PyObject **, PyObject **);
 
 // Aliases for the Python3 functions. As most Python functions exist in 2 & 3, using these makes it easier to distinguish in the code
 #define PY3_PyList_New PyList_New 
@@ -61,6 +62,7 @@ typedef void                (*Py_SetPythonHome_t)               (const wchar_t *
 #define PY3_PyDict_SetItem PyDict_SetItem
 #define PY3_PyTuple_New PyTuple_New
 #define PY3_PyTuple_SetItem PyTuple_SetItem
+#define PY3_PyErr_Restore PyErr_Restore
 
 bool Py2IsInitialized();
 bool LoadPy2AndResolveSymbols(const char *pFilePath);
@@ -99,5 +101,6 @@ PyErr_Print_t					PY2_PyErr_Print;
 PyDict_Next_t					PY2_PyDict_Next;
 PyTuple_Size_t					PY2_PyTuple_Size;
 Py_SetPythonHome_t              PY2_Py_SetPythonHome;
+PyErr_Fetch_t                   PY2_PyErr_Fetch;
 
 #endif // MARSHAL_UTILS_h__

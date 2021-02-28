@@ -7,9 +7,9 @@ EXEC_MODE_EXEC = 1
 
 class Py2Emulator:
 
-    def __enter__(self, py2_binary_path=None, py2_home=None):
+    def __init__(self, py2_binary_path=None, py2_home=None):
         """
-        Initializes the Python2 Emulator
+        Constructor for Py2Emulator
 
         :param py2_binary_path: Path to the Python2 binary file. If not a full path the string must be resolvable in
         the search path. Defaults to libpython2.7.so on Linux and Python27.dll on Windows
@@ -18,7 +18,14 @@ class Py2Emulator:
         site packages.
         :type py2_home: str
         """
-        self.initialize(py2_binary_path, py2_home)
+        self.py2_binary_path = py2_binary_path
+        self.py2_home = py2_home
+
+    def __enter__(self):
+        """
+        Initializes the Python2 Emulator
+        """
+        self.initialize(self.py2_binary_path, self.py2_home)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
