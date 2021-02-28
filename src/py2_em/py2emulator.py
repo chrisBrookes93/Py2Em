@@ -96,7 +96,7 @@ class Py2Emulator:
         except RuntimeError as exc:
             Py2Emulator.finalize()
             raise ImportError("Py2 Interpreter failed to import the 'site' module. Have you set the py2_home "
-                              "correctly?. Exception caught: {}".format(str(exc))) from None
+                              "correctly?. Exception caught: {}".format(str(exc)))
 
     @staticmethod
     def exec(exec_str):
