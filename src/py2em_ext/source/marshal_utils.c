@@ -34,9 +34,7 @@ bool LoadPy2AndResolveSymbols(const char* pFilePath)
 
 	if (!pGlobPyHandle)
 	{
-		DWORD errorMessageID = GetLastError();
-		Log("Failed. Error: \n");
-		PyErr_SetString(PyExc_RuntimeError, "LOAD LIBRARY RETUREND NULL");
+		PY3_PyErr_Format(PyExc_RuntimeError, "Failed to find Python2 binary at %s. Error: LoadLibrary returned NULL", pFilePath);
 		return false;
 	}
 
@@ -55,7 +53,7 @@ bool LoadPy2AndResolveSymbols(const char* pFilePath)
 	if (!pGlobPyHandle || pError)
 	{
 		Log("Failed. Error: %s\n", pError);
-		PyErr_SetString(PyExc_RuntimeError, pError);
+		PY3_PyErr_Format(PyExc_RuntimeError, "Failed to find Python2 binary at %s. Error: %s", pFilePath, pError);
 		return false;
 	}
 	else
@@ -111,6 +109,7 @@ bool InitializePy2Symbols()
 	PY2_PyTuple_Size = (PyTuple_Size_t)GetPy2Symbol("PyTuple_Size");
 	PY2_Py_SetPythonHome = (Py_SetPythonHome_t)GetPy2Symbol("Py_SetPythonHome");
 	PY2_PyErr_Fetch = (PyErr_Fetch_t)GetPy2Symbol("PyErr_Fetch");
+	PY2_Py_NoSiteFlag = (Py_NoSiteFlag_t)GetPy2Symbol("Py_NoSiteFlag");
 
 	if (!PY2_PyObject_GetIter ||
 		!PY2_PyIter_Next ||
@@ -133,7 +132,8 @@ bool InitializePy2Symbols()
 		!PY2_PyDict_Next ||
 		!PY2_PyTuple_Size ||
 		!PY2_Py_SetPythonHome ||
-		!PY2_PyErr_Fetch)
+		!PY2_PyErr_Fetch ||
+		!PY2_Py_NoSiteFlag)
 	{
 		Log("Failed to find one of the Python2 symbols.\n");
 		UninitializePy2Symbols();
@@ -170,6 +170,7 @@ void UninitializePy2Symbols()
 	PY2_PyTuple_Size = NULL;
 	PY2_Py_SetPythonHome = NULL;
 	PY2_PyErr_Fetch = NULL;
+	PY2_Py_NoSiteFlag = NULL;
 	Log("Set all of the Python2 function pointers to NULL.\n");
 }
 
@@ -186,7 +187,7 @@ void* GetPy2Symbol(const char* pSymbolName)
 	Log("Loading function %s() ...", pSymbolName);
 	if (!pGlobPyHandle)
 	{
-		Log("GLOB HANDLE IS NULL2\n");
+		Log("Python2 is not initialized\n");
 		return pRetVal;
 	}
 
@@ -194,8 +195,8 @@ void* GetPy2Symbol(const char* pSymbolName)
 	pRetVal = (void*)GetProcAddress(pGlobPyHandle, pSymbolName);
 	if (!pRetVal)
 	{
-		PyErr_SetString(PyExc_RuntimeError, "GetProcAddress returned NULL");
-		Log("GetProcAddress returned NULL.\n");
+		Log("Failed. GetProcAddress returned NULL.\n");
+		PY3_PyErr_Format(PyExc_RuntimeError, "Failed to find Py2 symbol: %s. Error: GetProcAddress returned NULL.\n", pSymbolName);
 	}
 	else
 	{
@@ -213,7 +214,7 @@ void* GetPy2Symbol(const char* pSymbolName)
 	if (pError || !pRetVal)
 	{
 		Log("Failed. Error: %s\n", pError);
-		PyErr_SetString(PyExc_RuntimeError, pError);
+		PY3_PyErr_Format(PyExc_RuntimeError, "Failed to find Py2 symbol: %s. Error: %s\n", pSymbolName, pError);
 	}
 	else
 	{
@@ -233,11 +234,11 @@ bool ClosePy27()
 	if (pGlobPyHandle)
 	{
 #ifdef _WIN32
-		BOOL fFreeResult;
-		fFreeResult = FreeLibrary(pGlobPyHandle);
-		if (!fFreeResult)
+		BOOL freeResult;
+		freeResult = FreeLibrary(pGlobPyHandle);
+		if (!freeResult)
 		{
-			PyErr_WarnEx(PyExc_Warning, "Call to FreeLibrary failed!", 1);
+			PY3_PyErr_WarnEx(PyExc_Warning, "Call to FreeLibrary failed!", 1);
 			return false;
 		}
 #else
@@ -247,7 +248,7 @@ bool ClosePy27()
 		{
 			Log("Failed.\n");
 			pGlobPyHandle = NULL;
-			PyErr_WarnEx(PyExc_Warning, "dlclose() returned a non-zero return code", 1);
+			PY3_PyErr_WarnEx(PyExc_Warning, "dlclose() returned a non-zero return code", 1);
 			return false;
 		}
 		else

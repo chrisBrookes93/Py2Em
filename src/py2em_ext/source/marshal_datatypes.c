@@ -8,11 +8,8 @@
 **/
 PyObject *MarshalListPy2ToPy3(PyObject *py2List)
 {
-	PyObject *pPy2Iterator;
-	PyObject *pPy2Item;
-
-	PyObject *pPy3List;
-	PyObject *pPy3Item;
+	PyObject *pPy2Iterator, *pPy2Item;
+	PyObject *pPy3List, *pPy3Item;
 
 	// Get the size of the list
 	Py_ssize_t listLen = PY2_PyList_Size(py2List);
@@ -199,11 +196,8 @@ PyObject *MarshalDictPy2ToPy3(PyObject *pPy2Obj)
 **/
 PyObject *MarshalTuplePy2ToPy3(PyObject *pPy2Obj)
 {
-	PyObject *pPy2Iterator;
-	PyObject *pPy2Item;
-
-	PyObject *pPy3Tuple;
-	PyObject *pPy3Item;
+	PyObject *pPy2Iterator, *pPy2Item;
+	PyObject *pPy3Tuple, *pPy3Item;
 
 	// Get the size of the tuple
 	Py_ssize_t tupleLen = PY2_PyTuple_Size(pPy2Obj);

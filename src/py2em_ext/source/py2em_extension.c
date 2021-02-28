@@ -131,6 +131,14 @@ static PyObject* Initialize(PyObject* pSelf, PyObject* pArgs)
 	    Log("Python home not provided");
 	}
 
+    /* If the Python Home has been incorrectly then Py_Initialize() will fail to find the 'site' package. 
+	This is a fatal error and will kill the entire Python3 process. 
+	To avoid this we set a flag to not load the site module when we initialize. (This is the equivalent of starting Python with the '-s' flag). 
+	By doing this we can manually load the site module after the runtime has been initialized. 
+	If this then fails then it raises a Python exception but will not end the process.
+    */
+    *PY2_Py_NoSiteFlag = 1;
+
 	PY2_Py_Initialize();
 
 	return PY3_Py_BuildValue("");

@@ -87,6 +87,17 @@ class Py2Emulator:
 
         _py2_em.Initialize(py2_binary_path, py2_home)
 
+        # _py2_em.Initialize() sets a flag that instructs Py_Initialize() not to import the 'site' module.
+        # This is to make sure that Py_Initialize() doesn't raise a fatal error and crash the process if the py2_home
+        # hasn't been set correctly. We import 'site' directly after the initialize which then means if the py2_home
+        # is incorrect, a Python Exception is raised rather than a fatal one.
+        try:
+            Py2Emulator.exec('import site')
+        except RuntimeError as exc:
+            Py2Emulator.finalize()
+            raise ImportError("Py2 Interpreter failed to import the 'site' module. Have you set the py2_home "
+                              "correctly?. Exception caught: {}".format(str(exc))) from None
+
     @staticmethod
     def exec(exec_str):
         """
