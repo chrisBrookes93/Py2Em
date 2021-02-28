@@ -9,7 +9,6 @@ jobs:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     timeout-minutes: 5
 
-
     steps:
       - uses: actions/checkout@v2
       - name: Install the Package
@@ -19,8 +18,14 @@ jobs:
           pip3 install .[dev]
       - name: Run the example script x64
         run: python3 utils\example.py C:\hostedtoolcache\windows\Python\2.7.18\x64
-      - name: Run the unit tests
+      - name: Run the unit tests on native Python
         run: |
           python3 -m pytest -v test
         env:
           PY2_HOME: C:\hostedtoolcache\windows\Python\2.7.18\x64
+      - name: Run the unit tests against a Py2 virtual environment
+        run: |
+          virtualenv py2_env -p C:\hostedtoolcache\windows\Python\2.7.18\x64\python.exe
+          python3 -m pytest -v test
+        env:
+          PY2_HOME: py2_env
