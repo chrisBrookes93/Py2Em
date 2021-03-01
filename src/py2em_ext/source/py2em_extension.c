@@ -29,7 +29,7 @@ PyObject* RunString(const char* pCommand, int start)
 	PyObject* pMainMod;
 	PyObject* pLocalsGlobals;
 	PyObject* pRunStrRes;
-    char *pErrorStr;
+	char* pErrorStr;
 
 	Log("Importing __main__ to get the locals/globals...");
 
@@ -53,24 +53,24 @@ PyObject* RunString(const char* pCommand, int start)
 	pRunStrRes = PY2_PyRun_String(pCommand, start, pLocalsGlobals, pLocalsGlobals);
 	if (!pRunStrRes)
 	{
-	    PyObject *pType, *pValue, *pTraceback;
-	    Log("Failed. Resolving exception...\n");
-        PY2_PyErr_Fetch(&pType, &pValue, &pTraceback);
-        if (pValue)
-        {
-            PyObject* pObjErrStr;
-		    pObjErrStr = PY2_PyObject_Str(pValue);
-            pErrorStr = PY2_PyString_AsString(pObjErrStr);
-            PY2_Py_XDECREF(pType);
-            PY2_Py_XDECREF(pValue);
-            PY2_Py_XDECREF(pTraceback);
-            PY2_Py_XDECREF(pObjErrStr);
-        }
-        else
-        {
-            pErrorStr = "Py2 Exception occurred but failed to resolve it";
-        }
-        PY3_PyErr_SetString(PyExc_RuntimeError, pErrorStr);
+		PyObject* pType, * pValue, * pTraceback;
+		Log("Failed. Resolving exception...\n");
+		PY2_PyErr_Fetch(&pType, &pValue, &pTraceback);
+		if (pValue)
+		{
+			PyObject* pObjErrStr;
+			pObjErrStr = PY2_PyObject_Str(pValue);
+			pErrorStr = PY2_PyString_AsString(pObjErrStr);
+			PY2_Py_XDECREF(pType);
+			PY2_Py_XDECREF(pValue);
+			PY2_Py_XDECREF(pTraceback);
+			PY2_Py_XDECREF(pObjErrStr);
+		}
+		else
+		{
+			pErrorStr = "Py2 Exception occurred but failed to resolve it";
+		}
+		PY3_PyErr_SetString(PyExc_RuntimeError, pErrorStr);
 		return NULL;
 	}
 	Log("Success.\n");
@@ -102,7 +102,7 @@ static PyObject* Initialize(PyObject* pSelf, PyObject* pArgs)
 	Log("Enter C Initialize()\n");
 
 	char* pPy2BinaryPath;
-	char *pPy2Home;
+	char* pPy2Home;
 
 	if (Py2IsInitialized())
 	{
@@ -123,21 +123,22 @@ static PyObject* Initialize(PyObject* pSelf, PyObject* pArgs)
 	}
 	if (pPy2Home && strcmp(pPy2Home, "") != 0)
 	{
-	    Log("Setting Python home to: %s\n", pPy2Home);
+		Log("Setting Python home to: %s\n", pPy2Home);
 		PY2_Py_SetPythonHome(pPy2Home);
 	}
 	else
 	{
-	    Log("Python home not provided");
+		Log("Python home not provided");
 	}
 
-    /* If the Python Home has been incorrectly then Py_Initialize() will fail to find the 'site' package. 
-	This is a fatal error and will kill the entire Python3 process. 
-	To avoid this we set a flag to not load the site module when we initialize. (This is the equivalent of starting Python with the '-s' flag). 
-	By doing this we can manually load the site module after the runtime has been initialized. 
+	/*
+	If the Python Home has been incorrectly then Py_Initialize() will fail to find the 'site' package.
+	This is a fatal error and will kill the entire Python3 process.
+	To avoid this we set a flag to not load the site module when we initialize. (This is the equivalent of starting Python with the '-s' flag).
+	By doing this we can manually load the site module after the runtime has been initialized.
 	If this then fails then it raises a Python exception but will not end the process.
-    */
-    *PY2_Py_NoSiteFlag = 1;
+	*/
+	*PY2_Py_NoSiteFlag = 1;
 
 	PY2_Py_Initialize();
 

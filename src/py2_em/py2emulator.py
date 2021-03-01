@@ -15,7 +15,7 @@ class Py2Emulator:
         the search path. Defaults to libpython2.7.so on Linux and Python27.dll on Windows
         :type py2_binary_path: str
         :param py2_home: Path to the directory containing the python2 executable. This is used to find the Python2
-        site packages.
+        site packages. See PYTHONPATH in Python documentation for more details.
         :type py2_home: str
         """
         self.py2_binary_path = py2_binary_path
@@ -42,7 +42,7 @@ class Py2Emulator:
         :return: Python2 binary name for the given OS
         :rtype: str
         """
-        if platform.system().lower() == 'windows':
+        if Py2Emulator._is_windows():
             return 'Python27.dll'
         else:
             return 'libpython2.7.so'
@@ -55,15 +55,28 @@ class Py2Emulator:
         :return: Default PYTHONHOME value based on the OS
         :rtype: str
         """
-        if platform.system().lower() == 'windows':
+        if Py2Emulator._is_windows():
             return 'C:\\Python27'
         else:
             return ''
 
     @staticmethod
+    def _is_windows():
+        """
+        Returns a bool indicating whether the OS is Windows
+
+        :return: Whether or not the OS is Windows
+        :rtype: bool
+        """
+        return platform.system().lower() == 'windows'
+
+    @staticmethod
     def is_initialized():
         """
         Returns a bool indicating if the interpreter is initialized
+
+        :return: Whether or not the Py2Emulator is initialized
+        :rtype: bool
         """        
         return _py2_em.IsInitialized()
 

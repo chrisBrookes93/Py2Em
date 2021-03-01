@@ -14,6 +14,7 @@
 #include <dlfcn.h>
 #endif
 
+
 #ifndef ERROR_SUCCESS
 #define ERROR_SUCCESS 0
 #endif
@@ -26,29 +27,33 @@
 **/
 typedef void 				(*Py_Initialize_t)					(void);
 typedef void 				(*Py_Finalize_t)					(void);
-typedef PyObject*			(*PyObject_GetIter_t)				(PyObject *);
-typedef PyObject*			(*PyIter_Next_t)					(PyObject *);
-typedef Py_ssize_t			(*PyList_Size_t)					(PyObject *);
-typedef long  				(*PyLong_AsLongAndOverflow_t)		(PyObject *, int*);
-typedef long long 			(*PyLong_AsLongLongAndOverflow_t)	(PyObject *, int*);
-typedef unsigned long long 	(*PyLong_AsUnsignedLongLong_t)		(PyObject *);
-typedef int   				(*PyObject_IsTrue_t)   				(PyObject *);
-typedef double				(*PyFloat_AsDouble_t)				(PyObject *);
-typedef double 				(*PyComplex_RealAsDouble_t)			(PyObject *);
-typedef double 				(*PyComplex_ImagAsDouble_t)			(PyObject *);
-typedef char* 				(*PyString_AsString_t) 				(PyObject *);
-typedef PyObject*			(*PyObject_Str_t)					(PyObject *);
-typedef PyObject* 			(*PyRun_String_t)					(const char *, int start, PyObject *globals, PyObject *locals);
-typedef PyObject* 			(*PyImport_AddModule_t)				(const char *name);
-typedef PyObject* 			(*PyModule_GetDict_t)				(PyObject *module);
+typedef PyObject*			(*PyObject_GetIter_t)				(PyObject*);
+typedef PyObject*			(*PyIter_Next_t)					(PyObject*);
+typedef Py_ssize_t			(*PyList_Size_t)					(PyObject*);
+typedef long  				(*PyLong_AsLongAndOverflow_t)		(PyObject*, int*);
+typedef long long 			(*PyLong_AsLongLongAndOverflow_t)	(PyObject*, int*);
+typedef unsigned long long 	(*PyLong_AsUnsignedLongLong_t)		(PyObject*);
+typedef int   				(*PyObject_IsTrue_t)   				(PyObject*);
+typedef double				(*PyFloat_AsDouble_t)				(PyObject*);
+typedef double 				(*PyComplex_RealAsDouble_t)			(PyObject*);
+typedef double 				(*PyComplex_ImagAsDouble_t)			(PyObject*);
+typedef char* 				(*PyString_AsString_t) 				(PyObject*);
+typedef PyObject*			(*PyObject_Str_t)					(PyObject*);
+typedef PyObject* 			(*PyRun_String_t)					(const char*, int, PyObject*, PyObject*);
+typedef PyObject* 			(*PyImport_AddModule_t)				(const char*);
+typedef PyObject* 			(*PyModule_GetDict_t)				(PyObject*);
 typedef void 				(*PyErr_Print_t)					(void);
-typedef int 				(*PyDict_Next_t)					(PyObject *, Py_ssize_t*, PyObject **, PyObject **);
-typedef Py_ssize_t			(*PyTuple_Size_t)					(PyObject *);
-typedef void                (*Py_SetPythonHome_t)               (const char *);
-typedef void                (*PyErr_Fetch_t)                    (PyObject **, PyObject **, PyObject **);
+typedef int 				(*PyDict_Next_t)					(PyObject*, Py_ssize_t*, PyObject**, PyObject**);
+typedef Py_ssize_t			(*PyTuple_Size_t)					(PyObject*);
+typedef void                (*Py_SetPythonHome_t)               (const char*);
+typedef void                (*PyErr_Fetch_t)                    (PyObject**, PyObject**, PyObject**);
 typedef int*                Py_NoSiteFlag_t;
 
-// Aliases for the Python3 functions. As most Python functions exist in 2 & 3, using these makes it easier to distinguish in the code
+/*
+* Aliases for the Python3 functions. As most Python functions exist in 2 & 3.
+* Using these makes it easier to distinguish in the code that we're calling the Python3 version from Python.h, rather
+* than the Python2 version from the loaded binary
+*/
 #define PY3_PyList_New PyList_New 
 #define PY3_PyList_SetItem PyList_SetItem
 #define PY3_PySet_New PySet_New
@@ -73,12 +78,12 @@ void *GetPy2Symbol(const char *pSymbolName);
 bool ClosePy27();
 
 
-/**
+/*
 * Handle to the Python2 binary
-**/
+*/
 void *pGlobPyHandle;
 
-/**
+/*
 * Python2 function pointers
 */
 PyObject_GetIter_t 				PY2_PyObject_GetIter;

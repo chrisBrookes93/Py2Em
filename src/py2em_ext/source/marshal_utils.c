@@ -233,9 +233,13 @@ bool ClosePy27()
 {
 	if (pGlobPyHandle)
 	{
+		UninitializePy2Symbols();
+
+
 #ifdef _WIN32
 		BOOL freeResult;
 		freeResult = FreeLibrary(pGlobPyHandle);
+		pGlobPyHandle = NULL;
 		if (!freeResult)
 		{
 			PY3_PyErr_WarnEx(PyExc_Warning, "Call to FreeLibrary failed!", 1);
@@ -244,10 +248,10 @@ bool ClosePy27()
 #else
 		Log("Calling dlclose() on the Python2 binary...");
 		int ret = dlclose(pGlobPyHandle);
+		pGlobPyHandle = NULL;
 		if (ret != ERROR_SUCCESS)
 		{
 			Log("Failed.\n");
-			pGlobPyHandle = NULL;
 			PY3_PyErr_WarnEx(PyExc_Warning, "dlclose() returned a non-zero return code", 1);
 			return false;
 		}
@@ -261,7 +265,5 @@ bool ClosePy27()
 	{
 		Log("Python2 binary is not loaded.\n");
 	}
-	UninitializePy2Symbols();
-	pGlobPyHandle = NULL;
 	return true;
 }
