@@ -28,7 +28,8 @@ setup(
         'Development Status :: 4 - Beta',
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
-        'Operating System :: POSIX :: Linux'
+        'Operating System :: POSIX :: Linux',
+        'Operating System :: Microsoft :: Windows'
     ],
     packages=find_packages(where='src'),
     package_dir={'': 'src'},

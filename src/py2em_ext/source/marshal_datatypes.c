@@ -368,7 +368,7 @@ PyObject* MarshalStringPy2ToPy3(PyObject* pPy2Obj)
 **/
 PyObject* MarshalObjectPy2ToPy3(PyObject* pPy2Obj)
 {
-	char* typeName;
+	const char* typeName;
 	typeName = pPy2Obj->ob_type->tp_name;
 	Log("Data type to marshal is: %s\n", typeName);
 
