@@ -5,7 +5,7 @@ EXEC_MODE_EVAL = 0
 EXEC_MODE_EXEC = 1
 
 
-class Py2Emulator:
+class Py2Emu:
 
     def __init__(self, py2_binary_path=None, py2_home=None):
         """

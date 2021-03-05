@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <Python.h>
 #include "logging.h"
+#include "py2_decref.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -47,6 +48,14 @@ typedef int 				(*PyDict_Next_t)					(PyObject*, Py_ssize_t*, PyObject**, PyObje
 typedef Py_ssize_t			(*PyTuple_Size_t)					(PyObject*);
 typedef void                (*Py_SetPythonHome_t)               (const char*);
 typedef void                (*PyErr_Fetch_t)                    (PyObject**, PyObject**, PyObject**);
+typedef PyObject*           (*PyString_FromString_t)            (const char *);
+typedef PyObject*           (*PyErr_Occurred_t)                 (void);
+typedef PyObject*           (*PyImport_Import_t)                (PyObject *);
+typedef PyObject*           (*PyObject_GetAttrString_t)         (PyObject *, const char *);
+typedef int                 (*PyCallable_Check_t)               (PyObject *);
+typedef PyObject*           (*PyObject_CallFunctionObjArgs_t)   (PyObject *, PyObject *, PyObject *, PyObject *, void *);
+typedef Py_ssize_t          (*PyString_Size_t)                  (PyObject *);
+
 typedef int*                Py_NoSiteFlag_t;
 
 /*
@@ -76,6 +85,8 @@ bool InitializePy2Symbols();
 void UninitializePy2Symbols();
 void *GetPy2Symbol(const char *pSymbolName);
 bool ClosePy27();
+void SetPy3ErrFromPy2();
+char *ConcatPython2Strings(PyObject *pPy2List);
 
 
 /*
@@ -109,5 +120,12 @@ PyTuple_Size_t					PY2_PyTuple_Size;
 Py_SetPythonHome_t              PY2_Py_SetPythonHome;
 PyErr_Fetch_t                   PY2_PyErr_Fetch;
 Py_NoSiteFlag_t                 PY2_Py_NoSiteFlag;
+PyString_FromString_t           PY2_PyString_FromString;
+PyErr_Occurred_t                PY2_PyErr_Occurred;
+PyImport_Import_t               PY2_PyImport_Import;
+PyObject_GetAttrString_t        PY2_PyObject_GetAttrString;
+PyCallable_Check_t              PY2_PyCallable_Check;
+PyObject_CallFunctionObjArgs_t  PY2_PyObject_CallFunctionObjArgs;
+PyString_Size_t                 PY2_PyString_Size;
 
 #endif // MARSHAL_UTILS_h__

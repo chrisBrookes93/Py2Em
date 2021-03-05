@@ -347,3 +347,29 @@ class DivClass:
     def test_invalid_py2_binary(self):
         with self.assertRaisesRegex(RuntimeError, 'Failed to find Python2 binary at'):
             Py2Emulator.initialize(py2_home=self.py2_home, py2_binary_path='C:\\NOT_EXIST')
+
+    def test_error_stacktrace(self):
+        nested_funcs = """
+def f1(num_a, num_b):
+    raise ValueError('Val Err')
+    
+def f2(num_a, num_b):
+    return f1(num_a, num_b)
+
+def f3(num_a, num_b):
+    return f2(num_a, num_b)
+
+def f4(num_a, num_b):
+    return f3(num_a, num_b)
+    
+def f5(num_a=1, num_b=2):
+    return f4(num_a, num_b)
+        """
+        with Py2Emulator(py2_home=self.py2_home) as py2em:
+            try:
+                py2em.exec(nested_funcs)
+                py2em.exec('ffbgcfh5()')
+
+            except RuntimeError as e:
+                self.assertIn('red lorry', str(e))
+                thrown1 = True

@@ -1,5 +1,5 @@
-# Py2Em
-Py2Em is library that emulates a Python2 interpreter, allowing you to execute Python code under 
+# Py2Emu
+Py2Emu (short for Python2Emulator) is library that emulates a Python2 interpreter, allowing you to execute Python code under 
 Python2, from Python3. This is achieved by embedding a Python2 interpreter into a Python3 C extension module.
 You can then execute and evaluate (equivalent to [```exec()```](https://docs.python.org/3/library/functions.html#exec) 
 and [```eval()```](https://docs.python.org/3/library/functions.html#eval)) code in Python2 by marshalling a 
@@ -41,21 +41,21 @@ It is likely that this library will work with other Linux distros and versions o
 
 ## Usage
 #### Initializing and Finalizing the Python2 Interpreter
-To setup the Python2 Interpreter, import ```Py2Emulator``` from ```py2_em``` and then statically call ```initialize()```.
+To setup the Python2 Interpreter, import ```Py2Emu``` from ```py2_em``` and then statically call ```initialize()```.
 Once you are finished with your Interpreter, close it by calling ```finalize()```. This is a global interpreter, and 
 you can only have one active at once.
 
 ```python
-from py2_em import Py2Emulator
-Py2Emulator.initialize()
+from py2_emu import Py2Emu
+Py2Emu.initialize()
 
-Py2Emulator.eval('10 / 3')
+Py2Emu.eval('10 / 3')
 
-Py2Emulator.finalize()
+Py2Emu.finalize()
 ```
-You can also use Py2Emulator as a Context Manager:
+You can also use Py2Emu as a Context Manager:
 ```python
-with Py2Emulator() as py2_emulator:
+with Py2Emu() as py2_emulator:
      py2_emulator.eval('10 / 3')
 
 ```
@@ -74,8 +74,8 @@ This value can either a full path, or a filename (as long as the file can be fou
 
 #### Executing and Evaluating
 Once initialized, you can execute and evaluate Python expressions via two functions:
-* ```Py2Emulator.exec(str)```
-* ```Py2Emulator.eval(str)```
+* ```Py2Emu.exec(str)```
+* ```Py2Emu.eval(str)```
 
 These behave the same was as [```exec()```](https://docs.python.org/3/library/functions.html#exec) and 
 [```eval()```](https://docs.python.org/3/library/functions.html#eval) in Python, but will execute the code in the Python2 emulator.
@@ -85,46 +85,46 @@ These behave the same was as [```exec()```](https://docs.python.org/3/library/fu
 
 Example Usage:
 ```python
-from py2_em import Py2Emulator
+from py2_em import Py2Emu
 import sys
 
-print('--> Initializing py2_em\n')
-Py2Emulator.initialize()
+print('--> Initializing Py2Emu\n')
+Py2Emu.initialize()
 
 print('--> Normal interpreter version is: ')
 print(sys.version + '\n')
 
-print('--> py2_em interpreter version is: ')
-Py2Emulator.exec('import sys')
-print(Py2Emulator.eval('sys.version') + '\n')
+print('--> Py2Emu interpreter version is: ')
+Py2Emu.exec('import sys')
+print(Py2Emu.eval('sys.version') + '\n')
 
 print('--> Normal interpreter\'s answer to "10/3" is: ')
 print(str(10 / 3) + '\n')
 
-print('--> py2_em interpreter\'s answer to "10/3" is: ')
-print(Py2Emulator.eval('str(10 / 3)') + '\n')
+print('--> Py2Emu interpreter\'s answer to "10/3" is: ')
+print(Py2Emu.eval('str(10 / 3)') + '\n')
 
-print('Finalizing py2_em')
-Py2Emulator.finalize()
+print('Finalizing Py2Emu')
+Py2Emu.finalize()
 ```
 This produces the following output:
 
 ```
---> Initializing Py2Em
+--> Initializing Py2Emu
 
 --> Normal interpreter version is: 
 3.8.5 (default, Jul 28 2020, 12:59:40) [GCC 9.3.0]
 
---> Py2Em interpreter version is: 
+--> Py2Emu interpreter version is: 
 2.7.18 (default, Aug  4 2020, 11:16:42) [GCC 9.3.0]
 
 --> Normal interpreter's answer to "10/3" is: 
 3.3333333333333335
 
---> Py2Em interpreter's answer to "10/3" is: 
+--> Py2Emu interpreter's answer to "10/3" is: 
 3
 
---> Finalizing Py2Em
+--> Finalizing Py2Emu
 ```
 
 ## Troubleshooting and Workarounds
@@ -143,7 +143,7 @@ expected_val = 'µ, ж, з, к, л'
 b64_data = base64.b64encode(expected_val.encode('utf-8')).decode('utf-8')
 input_val = "a = base64.b64decode(u'{}')".format(b64_data)
 
-with Py2Emulator() as py2em:
+with Py2Emu() as py2em:
     py2em.exec("import base64")
     py2em.exec(input_val)
     py2em.exec('print(a)')

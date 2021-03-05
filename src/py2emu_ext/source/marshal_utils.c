@@ -110,6 +110,13 @@ bool InitializePy2Symbols()
 	PY2_Py_SetPythonHome = (Py_SetPythonHome_t)GetPy2Symbol("Py_SetPythonHome");
 	PY2_PyErr_Fetch = (PyErr_Fetch_t)GetPy2Symbol("PyErr_Fetch");
 	PY2_Py_NoSiteFlag = (Py_NoSiteFlag_t)GetPy2Symbol("Py_NoSiteFlag");
+	PY2_PyString_FromString = (PyString_FromString_t)GetPy2Symbol("PyString_FromString");
+	PY2_PyErr_Occurred = (PyErr_Occurred_t)GetPy2Symbol("PyErr_Occurred");
+	PY2_PyImport_Import = (PyImport_Import_t)GetPy2Symbol("PyImport_Import");
+	PY2_PyObject_GetAttrString = (PyObject_GetAttrString_t)GetPy2Symbol("PyObject_GetAttrString");
+	PY2_PyCallable_Check = (PyCallable_Check_t)GetPy2Symbol("PyCallable_Check");
+	PY2_PyObject_CallFunctionObjArgs = (PyObject_CallFunctionObjArgs_t)GetPy2Symbol("PyObject_CallFunctionObjArgs");
+	PY2_PyString_Size = (PyString_Size_t)GetPy2Symbol("PyString_Size");
 
 	if (!PY2_PyObject_GetIter ||
 		!PY2_PyIter_Next ||
@@ -133,7 +140,14 @@ bool InitializePy2Symbols()
 		!PY2_PyTuple_Size ||
 		!PY2_Py_SetPythonHome ||
 		!PY2_PyErr_Fetch ||
-		!PY2_Py_NoSiteFlag)
+		!PY2_Py_NoSiteFlag ||
+		!PY2_PyString_FromString ||
+		!PY2_PyErr_Occurred ||
+		!PY2_PyImport_Import ||
+		!PY2_PyObject_GetAttrString ||
+		!PY2_PyCallable_Check ||
+		!PY2_PyObject_CallFunctionObjArgs ||
+		!PY2_PyString_Size)
 	{
 		Log("Failed to find one of the Python2 symbols.\n");
 		UninitializePy2Symbols();
@@ -171,6 +185,13 @@ void UninitializePy2Symbols()
 	PY2_Py_SetPythonHome = NULL;
 	PY2_PyErr_Fetch = NULL;
 	PY2_Py_NoSiteFlag = NULL;
+	PY2_PyString_FromString = NULL;
+	PY2_PyErr_Occurred = NULL;
+	PY2_PyImport_Import = NULL;
+	PY2_PyObject_GetAttrString = NULL;
+	PY2_PyCallable_Check = NULL;
+	PY2_PyObject_CallFunctionObjArgs = NULL;
+	PY2_PyString_Size = NULL;
 	Log("Set all of the Python2 function pointers to NULL.\n");
 }
 
@@ -267,3 +288,136 @@ bool ClosePy27()
 	}
 	return true;
 }
+
+
+void SetPy3ErrFromPy2()
+{
+    PyObject* pType, * pValue, * pTraceback;
+    PyObject *pTracebackModule, *pFormatExFunc;
+    char *pErrorStr;
+    Log("Failed. Resolving exception...\n");
+    PY2_PyErr_Fetch(&pType, &pValue, &pTraceback);
+    if (pValue)
+    {
+        PyObject* pObjErrStr;
+        pObjErrStr = PY2_PyObject_Str(pValue);
+        pErrorStr = PY2_PyString_AsString(pObjErrStr);
+        //PY2_Py_XDECREF(pType);
+        //PY2_Py_XDECREF(pValue);
+        //PY2_Py_XDECREF(pTraceback);
+        //PY2_Py_XDECREF(pObjErrStr);
+        // TODO - should we dup the string? strdup(str);
+    }
+    else
+    {
+        pErrorStr = "Py2 Exception occurred but failed to resolve it";
+    }
+
+            char* full_backtrace;
+
+     Log("Resolved error to: %s\n", pErrorStr);
+
+    /* See if we can get a full traceback */
+    PyObject *pModuleName;
+    pModuleName = PY2_PyString_FromString("traceback");
+    pTracebackModule = PY2_PyImport_Import(pModuleName);
+
+   // PY2_Py_XDECREF(pModuleName);
+
+    if (pTracebackModule == NULL) {
+        full_backtrace = NULL;
+        Log("Traceback module is NULL. TODO - cleanup and set error\n");
+        return;
+    }
+
+    pFormatExFunc = PY2_PyObject_GetAttrString(pTracebackModule, "format_exception");
+    if (pFormatExFunc && PY2_PyCallable_Check(pFormatExFunc)) {
+
+        PyObject *pyth_val;
+        pyth_val = PY2_PyObject_CallFunctionObjArgs(pFormatExFunc, pType, pValue, pTraceback, NULL);
+        char *pStrErr;
+        pStrErr = ConcatPython2Strings(pyth_val);
+        PY3_PyErr_SetString(PyExc_RuntimeError, pStrErr);
+        free(pStrErr);
+        pStrErr = NULL;
+        // TODO - You're missing some Py_DECREFs here ... pystr needs to be decref'd after each call to PyObject_Str, and pyth_module also needs to be decref'd
+    }
+}
+
+char *ConcatPython2Strings(const char *pErrPrefix, PyObject *pPyList)
+{
+    // Iterate through and work out the size of the string we need
+    PyObject *pPy2Iterator;
+    PyObject *pPy2Item;
+    pPy2Iterator = PY2_PyObject_GetIter(pPyList);
+	if (!pPy2Iterator)
+	{
+	    Log("TODO!!!!!\n");
+		return NULL;
+	}
+
+    int stringLen = len(pErrPrefix) + 1; // +1 to account for the null byte at the end!
+	while ((pPy2Item = PY2_PyIter_Next(pPy2Iterator)))
+	{
+	    stringLen += PY2_PyString_Size(pPy2Item);
+		PY2_Py_XDECREF(pPy2Item);
+    }
+    PY2_Py_XDECREF(pPy2Iterator);
+
+    char *pConcatStr;
+    pConcatStr = malloc(stringLen);
+    // TODO - check null
+
+    // Iterate through, marshal string into a char* and then copy into new allocation.
+    pPy2Iterator = PY2_PyObject_GetIter(pPyList);
+	if (!pPy2Iterator)
+	{
+	    Log("TODO2!!!!!\n");
+		return NULL;
+	}
+
+    int i = 0;
+	while ((pPy2Item = PY2_PyIter_Next(pPy2Iterator)))
+	{
+	    char *pCurrentStr = PY2_PyString_AsString(pPy2Item);
+	    //Log(pCurrentStr);
+	    Log("\nCurrent str is:\n'%s'\n", pCurrentStr);
+	    if (i==0)
+	    {
+	        strcpy(pConcatStr, pCurrentStr);
+	    }
+	    else
+	    {
+	        strcat(pConcatStr, pCurrentStr);
+	    }
+	    i++;
+		PY2_Py_XDECREF(pPy2Item);
+    }
+
+    Log("\n\nFinal string is: '%s'\n\n", pConcatStr);
+    return pConcatStr;
+}
+
+/*
+
+PyObject* pType, * pValue, * pTraceback;
+		Log("Failed. Resolving exception...\n");
+		PY2_PyErr_Fetch(&pType, &pValue, &pTraceback);
+		if (pValue)
+		{
+			PyObject* pObjErrStr;
+			pObjErrStr = PY2_PyObject_Str(pValue);
+			pErrorStr = PY2_PyString_AsString(pObjErrStr);
+			PY2_Py_XDECREF(pType);
+			PY2_Py_XDECREF(pValue);
+			PY2_Py_XDECREF(pTraceback);
+			PY2_Py_XDECREF(pObjErrStr);
+		}
+		else
+		{
+			pErrorStr = "Py2 Exception occurred but failed to resolve it";
+		}
+		PY3_PyErr_SetString(PyExc_RuntimeError, pErrorStr);
+		return NULL;
+
+		*/

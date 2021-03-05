@@ -1,20 +1,20 @@
 from setuptools import setup, Extension, find_packages
 
-native_module = Extension('_py2_em',
+native_module = Extension('_py2_emu',
                           sources=[
-                              'src/py2em_ext/source/py2em_extension.c',
-                              'src/py2em_ext/source/marshal_utils.c',
-                              'src/py2em_ext/source/marshal_datatypes.c',
-                              'src/py2em_ext/source/logging.c'],
-                          include_dirs=['src/py2em_ext/include'],
-                          define_macros=[('LOGGING_ON', 0)])
+                              'src/py2emu_ext/source/py2em_extension.c',
+                              'src/py2emu_ext/source/marshal_utils.c',
+                              'src/py2emu_ext/source/marshal_datatypes.c',
+                              'src/py2emu_ext/source/logging.c'],
+                          include_dirs=['src/py2emu_ext/include'],
+                          define_macros=[('LOGGING_ON', 1)])
                           
 
 with open('README.md', 'r') as fp:
     long_description = fp.read()
 
 setup(
-    name='py2_em',
+    name='Py2Emu',
     version='1.0',
     description='Execute Python code in an emulated Python2 terminal (within Python3)',
     ext_modules=[native_module],
