@@ -2,7 +2,7 @@
 Re-implementation of Python2's reference decrement and destructor code. 
 Since they're implement as macros rather than functions, we cannot invoke them from the loaded binary, so we instead replicate them.
 
-All Macros has been prefixed with a 'PY2_' to avoid name conflicts. It's likely the case that these are exactly the same in Python3, but that may not always be the case.
+All Macros have been prefixed with a 'PY2_' to avoid name conflicts. It's likely the case that these are exactly the same in Python3, but that may not always be the case.
 
 Sourced from Python2.7.18/include/object.h
 */

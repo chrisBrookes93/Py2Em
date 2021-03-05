@@ -6,13 +6,10 @@
 * @param py2List Python2 list to marshal
 * @return Python3 PyObject list
 **/
-PyObject *MarshalListPy2ToPy3(PyObject *py2List)
+PyObject* MarshalListPy2ToPy3(PyObject* py2List)
 {
-	PyObject *pPy2Iterator;
-	PyObject *pPy2Item;
-
-	PyObject *pPy3List;
-	PyObject *pPy3Item;
+	PyObject* pPy2Iterator, * pPy2Item;
+	PyObject* pPy3List, * pPy3Item;
 
 	// Get the size of the list
 	Py_ssize_t listLen = PY2_PyList_Size(py2List);
@@ -25,7 +22,7 @@ PyObject *MarshalListPy2ToPy3(PyObject *py2List)
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to create a new Python3 list.");
 		return NULL;
 	}
-	
+
 	// Get an iterator to the py2 list
 	pPy2Iterator = PY2_PyObject_GetIter(py2List);
 	if (!pPy2Iterator)
@@ -34,7 +31,7 @@ PyObject *MarshalListPy2ToPy3(PyObject *py2List)
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to get an iterator to the Python2 List");
 		return NULL;
 	}
-	
+
 	int index = 0;
 
 	while ((pPy2Item = PY2_PyIter_Next(pPy2Iterator)))
@@ -51,9 +48,9 @@ PyObject *MarshalListPy2ToPy3(PyObject *py2List)
 			PY3_Py_XDECREF(pPy3List);
 			return NULL;
 		}
-		
+
 		// Note that PyList_SetItem() steals the reference of the item being added so we don't PY3_Py_XDECREF() on success
-		if(PY3_PyList_SetItem(pPy3List, index, pPy3Item) != ERROR_SUCCESS)
+		if (PY3_PyList_SetItem(pPy3List, index, pPy3Item) != ERROR_SUCCESS)
 		{
 			PY2_Py_XDECREF(pPy2Iterator);
 			PY3_Py_XDECREF(pPy3Item);
@@ -76,13 +73,13 @@ PyObject *MarshalListPy2ToPy3(PyObject *py2List)
 * @param pPy2Obj Python2 set to marshal
 * @return Python3 PyObject set
 **/
-PyObject *MarshalSetPy2ToPy3(PyObject *pPy2Obj)
+PyObject* MarshalSetPy2ToPy3(PyObject* pPy2Obj)
 {
 	Log("Marshalling a set\n");
-	PyObject *pPy2Item;
-	PyObject *pPy3Item;
-	PyObject *pPy2Iterator;
-	PyObject *pPy3Set;
+	PyObject* pPy2Item;
+	PyObject* pPy3Item;
+	PyObject* pPy2Iterator;
+	PyObject* pPy3Set;
 
 	// Initialize the new set
 	pPy3Set = PY3_PySet_New(NULL);
@@ -91,7 +88,7 @@ PyObject *MarshalSetPy2ToPy3(PyObject *pPy2Obj)
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to create a new Python3 set.");
 		return NULL;
 	}
-	
+
 	// Get an iterator to the py2 set
 	pPy2Iterator = PY2_PyObject_GetIter(pPy2Obj);
 	if (!pPy2Iterator)
@@ -100,7 +97,7 @@ PyObject *MarshalSetPy2ToPy3(PyObject *pPy2Obj)
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to get an iterator to the Python2 set");
 		return NULL;
 	}
-	
+
 	int index = 0;
 
 	while ((pPy2Item = PY2_PyIter_Next(pPy2Iterator)))
@@ -117,8 +114,8 @@ PyObject *MarshalSetPy2ToPy3(PyObject *pPy2Obj)
 			PY3_Py_XDECREF(pPy3Set);
 			return NULL;
 		}
-		
-		if(PY3_PySet_Add(pPy3Set, pPy3Item) != ERROR_SUCCESS)
+
+		if (PY3_PySet_Add(pPy3Set, pPy3Item) != ERROR_SUCCESS)
 		{
 			PY2_Py_XDECREF(pPy2Iterator);
 			PY3_Py_XDECREF(pPy3Item);
@@ -141,13 +138,13 @@ PyObject *MarshalSetPy2ToPy3(PyObject *pPy2Obj)
 * @param pPy2Obj Python2 dict to marshal
 * @return Python3 PyObject dict
 **/
-PyObject *MarshalDictPy2ToPy3(PyObject *pPy2Obj)
+PyObject* MarshalDictPy2ToPy3(PyObject* pPy2Obj)
 {
 	Log("Marshalling a dict\n");
 	// Initialize the new dict
-	PyObject *pPy3Dict;
-	PyObject *pPy2Key, *pPy2Value;
-	PyObject *pPy3Key, *pPy3Value;
+	PyObject* pPy3Dict;
+	PyObject* pPy2Key, * pPy2Value;
+	PyObject* pPy3Key, * pPy3Value;
 	Py_ssize_t index = 0;
 
 	pPy3Dict = PY3_PyDict_New();
@@ -197,13 +194,10 @@ PyObject *MarshalDictPy2ToPy3(PyObject *pPy2Obj)
 * @param pPy2Obj Python2 tuple to marshal
 * @return Python3 PyObject tuple
 **/
-PyObject *MarshalTuplePy2ToPy3(PyObject *pPy2Obj)
+PyObject* MarshalTuplePy2ToPy3(PyObject* pPy2Obj)
 {
-	PyObject *pPy2Iterator;
-	PyObject *pPy2Item;
-
-	PyObject *pPy3Tuple;
-	PyObject *pPy3Item;
+	PyObject* pPy2Iterator, * pPy2Item;
+	PyObject* pPy3Tuple, * pPy3Item;
 
 	// Get the size of the tuple
 	Py_ssize_t tupleLen = PY2_PyTuple_Size(pPy2Obj);
@@ -216,7 +210,7 @@ PyObject *MarshalTuplePy2ToPy3(PyObject *pPy2Obj)
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to create a new Python3 tuple.");
 		return NULL;
 	}
-	
+
 	// Get an iterator to the py2 list
 	pPy2Iterator = PY2_PyObject_GetIter(pPy2Obj);
 	if (!pPy2Iterator)
@@ -266,7 +260,7 @@ PyObject *MarshalTuplePy2ToPy3(PyObject *pPy2Obj)
 * @param pPy2Obj Python2 number to marshal
 * @return Python3 PyObject number
 **/
-PyObject *MarshalLongPy2toPy3(PyObject *pPy2Obj)
+PyObject* MarshalLongPy2toPy3(PyObject* pPy2Obj)
 {
 	Log("Marshalling a long/int\n");
 	int overflow;
@@ -278,7 +272,7 @@ PyObject *MarshalLongPy2toPy3(PyObject *pPy2Obj)
 		Log("Value overflowed, attempting to marshal as an unsigned long long...");
 		// Overflowed a long but we know its positive, attempt a larger structure
 		unsigned long long cULongLongVal = PY2_PyLong_AsUnsignedLongLong(pPy2Obj);
-		if (cULongLongVal == (unsigned long long)-1)
+		if (cULongLongVal == (unsigned long long) - 1)
 		{
 			Log("Failed.\n");
 			PY3_PyErr_SetString(PyExc_RuntimeError, "Long value overflow. Value is larger than an unsigned long long.");
@@ -298,11 +292,11 @@ PyObject *MarshalLongPy2toPy3(PyObject *pPy2Obj)
 		{
 			Log("Failed.\n");
 			PY3_PyErr_SetString(PyExc_RuntimeError, "Long value overflow/underflow. Value does not fit in a long long");
-			return NULL;		
+			return NULL;
 		}
 		Log("Success.\n");
 		return PY3_Py_BuildValue("L", cLongLongVal);
-	} 
+	}
 	else
 	{
 		return PY3_Py_BuildValue("l", cLongVal);
@@ -315,7 +309,7 @@ PyObject *MarshalLongPy2toPy3(PyObject *pPy2Obj)
 * @param pPy2Obj Python2 bool to marshal
 * @return Python3 PyObject bool
 **/
-PyObject *MarshalBoolPy2ToPy3(PyObject *pPy2Obj)
+PyObject* MarshalBoolPy2ToPy3(PyObject* pPy2Obj)
 {
 	return PY2_PyObject_IsTrue(pPy2Obj) ? Py_True : Py_False;
 }
@@ -326,7 +320,7 @@ PyObject *MarshalBoolPy2ToPy3(PyObject *pPy2Obj)
 * @param pPy2Obj Python2 float to marshal
 * @return Python3 PyObject float
 **/
-PyObject *MarshalFloatPy2ToPy3(PyObject *pPy2Obj)
+PyObject* MarshalFloatPy2ToPy3(PyObject* pPy2Obj)
 {
 	double dFloatVal = PY2_PyFloat_AsDouble(pPy2Obj);
 	return PY3_Py_BuildValue("d", dFloatVal);
@@ -338,12 +332,12 @@ PyObject *MarshalFloatPy2ToPy3(PyObject *pPy2Obj)
 * @param pPy2Obj Python2 complex to marshal
 * @return Python3 PyObject complex
 **/
-PyObject *MarshalComplexPy2ToPy3(PyObject *pPy2Obj)
+PyObject* MarshalComplexPy2ToPy3(PyObject* pPy2Obj)
 {
 	double dRealVal = PY2_PyComplex_RealAsDouble(pPy2Obj);
 	double dImagVal = PY2_PyComplex_ImagAsDouble(pPy2Obj);
 
-	PyObject *pComplex;
+	PyObject* pComplex;
 	pComplex = PY3_PyComplex_FromDoubles(dRealVal, dImagVal);
 	return pComplex;
 }
@@ -354,9 +348,9 @@ PyObject *MarshalComplexPy2ToPy3(PyObject *pPy2Obj)
 * @param pPy2Obj Python2 str to marshal
 * @return Python3 PyObject str
 **/
-PyObject *MarshalStringPy2ToPy3(PyObject *pPy2Obj)
+PyObject* MarshalStringPy2ToPy3(PyObject* pPy2Obj)
 {
-	char *pCStr_val;
+	char* pCStr_val;
 	pCStr_val = PY2_PyString_AsString(pPy2Obj);
 	if (!pCStr_val)
 	{
@@ -372,15 +366,15 @@ PyObject *MarshalStringPy2ToPy3(PyObject *pPy2Obj)
 * @param pPy2Obj Python2 object to marshal
 * @return Python3 PyObject object
 **/
-PyObject *MarshalObjectPy2ToPy3(PyObject *pPy2Obj)
+PyObject* MarshalObjectPy2ToPy3(PyObject* pPy2Obj)
 {
-	char *typeName;
+	const char* typeName;
 	typeName = pPy2Obj->ob_type->tp_name;
-	Log("Data type to marshal is: %s\n", typeName);	
+	Log("Data type to marshal is: %s\n", typeName);
 
 	if (strcmp(typeName, "int") == STR_MATCH || strcmp(typeName, "long") == STR_MATCH)
 	{
-		return MarshalLongPy2toPy3(pPy2Obj);		
+		return MarshalLongPy2toPy3(pPy2Obj);
 	}
 	if (strcmp(typeName, "float") == STR_MATCH)
 	{
@@ -421,13 +415,13 @@ PyObject *MarshalObjectPy2ToPy3(PyObject *pPy2Obj)
 	else if (strcmp(typeName, "unicode") == STR_MATCH)
 	{
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Unicode marshalling not supported. Consider encoding return value");
-		return NULL;	
+		return NULL;
 	}
 	else
 	{
 		Log("Marshaling of this type is not supported, reverting to str() instead.\n");
-		PyObject *pPy2Str;
-		PyObject *pRetVal;
+		PyObject* pPy2Str;
+		PyObject* pRetVal;
 
 		pPy2Str = PY2_PyObject_Str(pPy2Obj);
 		if (!pPy2Str)
@@ -435,7 +429,7 @@ PyObject *MarshalObjectPy2ToPy3(PyObject *pPy2Obj)
 			PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to call str() on object.");
 			return NULL;
 		}
-		pRetVal =  MarshalStringPy2ToPy3(pPy2Str);
+		pRetVal = MarshalStringPy2ToPy3(pPy2Str);
 		PY2_Py_XDECREF(pPy2Str);
 		return pRetVal;
 	}

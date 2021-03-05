@@ -7,32 +7,33 @@
 * @param pArgs Unused
 * @return Python-encoded boolean indicating initialized state
 **/
-static PyObject* IsInitialized(PyObject *pSelf, PyObject *pArgs)
+static PyObject* IsInitialized(PyObject* pSelf, PyObject* pArgs)
 {
 	Log("Enter C IsInitialized\n");
 	return PY3_Py_BuildValue("O", Py2IsInitialized() ? Py_True : Py_False);
 }
 
 /**
-* Invoke PyRun_String() from the loaded libpython SO file.
-* This code is based upon Python/pythonrun.c#PyRun_SimpleStringFlags(). Note that PyRun_SimpleStringFlags() 
+* Invoke PyRun_String() from the loaded python binary
+* This code is based upon Python/pythonrun.c#PyRun_SimpleStringFlags(). Note that PyRun_SimpleStringFlags()
 * does not Py_DECREF the pointers returned by PyImport_AddModule("__main__") and PyModule_GetDict(), so we don't either.
 *
 * @param pCommand Python command to execute
 * @param start Evaluation mode (e.g. Py_eval_input)
 * @return Python-encoded result
 **/
-PyObject *RunString(const char *pCommand, int start)
+PyObject* RunString(const char* pCommand, int start)
 {
 	Log("Enter C RunString\n");
-	PyObject *pRetVal;
-	PyObject *pMainMod;
-	PyObject *pLocalsGlobals;
-	PyObject *pRunStrRes;
+	PyObject* pRetVal;
+	PyObject* pMainMod;
+	PyObject* pLocalsGlobals;
+	PyObject* pRunStrRes;
+	char* pErrorStr;
 
 	Log("Importing __main__ to get the locals/globals...");
 
-	// Examples in Python/pythonrun.c#PyRun_SimpleStringFlags() does not DECREF this object
+	// Examples in Python/pythonrun.c#PyRun_SimpleStringFlags() does not DECREF this object (or the dict reference below)
 	pMainMod = PY2_PyImport_AddModule("__main__");
 	if (!pMainMod)
 	{
@@ -52,9 +53,25 @@ PyObject *RunString(const char *pCommand, int start)
 	pRunStrRes = PY2_PyRun_String(pCommand, start, pLocalsGlobals, pLocalsGlobals);
 	if (!pRunStrRes)
 	{
-		Log("Failed. Printing Error:\n");
-		PY2_PyErr_Print();
-		return PY3_Py_BuildValue("");
+		PyObject* pType, * pValue, * pTraceback;
+		Log("Failed. Resolving exception...\n");
+		PY2_PyErr_Fetch(&pType, &pValue, &pTraceback);
+		if (pValue)
+		{
+			PyObject* pObjErrStr;
+			pObjErrStr = PY2_PyObject_Str(pValue);
+			pErrorStr = PY2_PyString_AsString(pObjErrStr);
+			PY2_Py_XDECREF(pType);
+			PY2_Py_XDECREF(pValue);
+			PY2_Py_XDECREF(pTraceback);
+			PY2_Py_XDECREF(pObjErrStr);
+		}
+		else
+		{
+			pErrorStr = "Py2 Exception occurred but failed to resolve it";
+		}
+		PY3_PyErr_SetString(PyExc_RuntimeError, pErrorStr);
+		return NULL;
 	}
 	Log("Success.\n");
 
@@ -80,29 +97,48 @@ PyObject *RunString(const char *pCommand, int start)
 * @param pArgs Argument dictionary
 * @return Python-encoded empty value
 **/
-static PyObject* Initialize(PyObject *pSelf, PyObject *pArgs)
+static PyObject* Initialize(PyObject* pSelf, PyObject* pArgs)
 {
-    Log("Enter C Initialize()\n");
+	Log("Enter C Initialize()\n");
 
-    char *pSo_filepath;
+	char* pPy2BinaryPath;
+	char* pPy2Home;
 
-    if (Py2IsInitialized())
+	if (Py2IsInitialized())
 	{
 		PY3_PyErr_WarnEx(PyExc_Warning, "Interpreter is already Initialized.", 1);
 		return PY3_Py_BuildValue("");
 	}
 
-	if (!PY3_PyArg_ParseTuple(pArgs, "s", &pSo_filepath))
+	if (!PY3_PyArg_ParseTuple(pArgs, "ss", &pPy2BinaryPath, &pPy2Home))
 	{
 		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
 		return NULL;
 	}
-	
-	if (!LoadPython2AndInitFuncs(pSo_filepath))
+
+	if (!LoadPy2AndResolveSymbols(pPy2BinaryPath))
 	{
-	    // LoadPython27() should have set the error
-	    return NULL;
+		// LoadPy2AndResolveSymbols() should have set the error
+		return NULL;
 	}
+	if (pPy2Home && strcmp(pPy2Home, "") != 0)
+	{
+		Log("Setting Python home to: %s\n", pPy2Home);
+		PY2_Py_SetPythonHome(pPy2Home);
+	}
+	else
+	{
+		Log("Python home not provided");
+	}
+
+	/*
+	If the Python Home has been incorrectly then Py_Initialize() will fail to find the 'site' package.
+	This is a fatal error and will kill the entire Python3 process.
+	To avoid this we set a flag to not load the site module when we initialize. (This is the equivalent of starting Python with the '-s' flag).
+	By doing this we can manually load the site module after the runtime has been initialized.
+	If this then fails then it raises a Python exception but will not end the process.
+	*/
+	*PY2_Py_NoSiteFlag = 1;
 
 	PY2_Py_Initialize();
 
@@ -115,14 +151,14 @@ static PyObject* Initialize(PyObject *pSelf, PyObject *pArgs)
 * @param pSelf Unused
 * @param pArgs Argument tuple containing the command to execute, and the execution mode
 **/
-static PyObject* Py2_Run(PyObject *pSelf, PyObject *pArgs)
+static PyObject* Py2_Run(PyObject* pSelf, PyObject* pArgs)
 {
 	Log("Enter C Py2_Exec\n");
 
-	char *pCommand;
+	char* pCommand;
 	int start;
 	int execMode;
-	PyObject *pRunResult;
+	PyObject* pRunResult;
 
 	if (!Py2IsInitialized(NULL, NULL))
 	{
@@ -139,17 +175,17 @@ static PyObject* Py2_Run(PyObject *pSelf, PyObject *pArgs)
 	if (execMode == EXEC_MODE_EVAL)
 	{
 		start = Py_eval_input;
-		Log("Command to eval: %s\n", pCommand);
+		Log("Command to eval: '%s'\n", pCommand);
 
 	}
 	else if (execMode == EXEC_MODE_EXEC)
 	{
 		start = Py_file_input;
-		Log("Command to exec: %s\n", pCommand);
+		Log("Command to exec: '%s'\n", pCommand);
 	}
 	else
 	{
-		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to parse input args.");
+		PY3_PyErr_SetString(PyExc_RuntimeError, "Failed to parse exec mode.");
 		return NULL;
 	}
 
@@ -169,7 +205,7 @@ static PyObject* Py2_Run(PyObject *pSelf, PyObject *pArgs)
 * @param pSelf Unused
 * @param pArgs Unused
 **/
-static PyObject* Finalize(PyObject *pSelf, PyObject *pArgs)
+static PyObject* Finalize(PyObject* pSelf, PyObject* pArgs)
 {
 	Log("Enter C Finalize\n");
 	if (!Py2IsInitialized())
@@ -181,8 +217,8 @@ static PyObject* Finalize(PyObject *pSelf, PyObject *pArgs)
 
 	Log("Calling Py_Finalize()\n");
 	PY2_Py_Finalize();
-		
-	if (!ClosePython27())
+
+	if (!ClosePy27())
 	{
 		// ClosePython27() will have set the error
 		Log("Failed to close the Python2 binary\n");
@@ -197,16 +233,16 @@ static PyObject* Finalize(PyObject *pSelf, PyObject *pArgs)
 * Start of the Python Extension boilerplate code
 **/
 static PyMethodDef mainMethods[] = {
-	{"Initialize", Initialize, METH_VARARGS, "Initialize the Python2.7 Interpreter"},
-	{"IsInitialized", IsInitialized, METH_VARARGS, "Check if the Python2.7 Interpreter is initialized"},
-	{"Py2_Run", Py2_Run, METH_VARARGS, "Execute or evaluate a string in the Python2.7 interpreter"},
-	{"Finalize", Finalize, METH_VARARGS, "Close the Python2.7 interpreter"},
+	{"Initialize", Initialize, METH_VARARGS, "Initialize the Python2 Interpreter"},
+	{"IsInitialized", IsInitialized, METH_VARARGS, "Check if the Python2 Interpreter is initialized"},
+	{"Py2_Run", Py2_Run, METH_VARARGS, "Execute or evaluate a string in the Python2 interpreter"},
+	{"Finalize", Finalize, METH_VARARGS, "Close the Python2 interpreter"},
 	{NULL, NULL, 0, NULL}
 };
 
 static PyModuleDef Py2Em = {
 	PyModuleDef_HEAD_INIT,
-	"Py2Em", "Run code in a Python2.7 interpreter",
+	"Py2Em", "Run code in a Python2 interpreter",
 	-1,
 	mainMethods
 };

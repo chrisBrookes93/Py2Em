@@ -1,9 +1,11 @@
 from py2_em import Py2Emulator
 import sys
 
+python_home = sys.argv[1] if len(sys.argv) == 2 else None
+
 # Initialize the Py2 interpreter
 print('--> Initializing py2_em\n')
-Py2Emulator.initialize()
+Py2Emulator.initialize(py2_home=python_home)
 
 print('--> Normal interpreter version is: ')
 print(sys.version + '\n')

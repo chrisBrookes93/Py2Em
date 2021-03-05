@@ -16,7 +16,7 @@ with open('README.md', 'r') as fp:
 setup(
     name='py2_em',
     version='1.0',
-    description='Execute Python code in an emulated Python2.7 terminal (within Python3)',
+    description='Execute Python code in an emulated Python2 terminal (within Python3)',
     ext_modules=[native_module],
     author='Chris Brookes',
     author_email='chris_b_856@hotmail.com',
@@ -28,7 +28,8 @@ setup(
         'Development Status :: 4 - Beta',
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
-        'Operating System :: POSIX :: Linux'
+        'Operating System :: POSIX :: Linux',
+        'Operating System :: Microsoft :: Windows'
     ],
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
