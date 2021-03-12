@@ -81,33 +81,33 @@ bool ClosePy27();
 /*
 * Handle to the Python2 binary
 */
-void *pGlobPyHandle;
+extern void *pGlobPyHandle;
 
 /*
 * Python2 function pointers
 */
-PyObject_GetIter_t 				PY2_PyObject_GetIter;
-PyIter_Next_t 					PY2_PyIter_Next;
-PyList_Size_t					PY2_PyList_Size;
-Py_Initialize_t					PY2_Py_Initialize;
-Py_Finalize_t					PY2_Py_Finalize;
-PyLong_AsLongAndOverflow_t 		PY2_PyLong_AsLongAndOverflow;
-PyLong_AsLongLongAndOverflow_t 	PY2_PyLong_AsLongLongAndOverflow;
-PyLong_AsUnsignedLongLong_t 	PY2_PyLong_AsUnsignedLongLong;
-PyObject_IsTrue_t				PY2_PyObject_IsTrue;
-PyFloat_AsDouble_t				PY2_PyFloat_AsDouble;
-PyComplex_RealAsDouble_t		PY2_PyComplex_RealAsDouble;
-PyComplex_ImagAsDouble_t		PY2_PyComplex_ImagAsDouble;
-PyString_AsString_t				PY2_PyString_AsString;
-PyObject_Str_t 					PY2_PyObject_Str;
-PyRun_String_t					PY2_PyRun_String;
-PyModule_GetDict_t				PY2_PyModule_GetDict;
-PyImport_AddModule_t			PY2_PyImport_AddModule;
-PyErr_Print_t					PY2_PyErr_Print;
-PyDict_Next_t					PY2_PyDict_Next;
-PyTuple_Size_t					PY2_PyTuple_Size;
-Py_SetPythonHome_t              PY2_Py_SetPythonHome;
-PyErr_Fetch_t                   PY2_PyErr_Fetch;
-Py_NoSiteFlag_t                 PY2_Py_NoSiteFlag;
+extern PyObject_GetIter_t             PY2_PyObject_GetIter;
+extern PyIter_Next_t                  PY2_PyIter_Next;
+extern PyList_Size_t                  PY2_PyList_Size;
+extern Py_Initialize_t                PY2_Py_Initialize;
+extern Py_Finalize_t                  PY2_Py_Finalize;
+extern PyLong_AsLongAndOverflow_t     PY2_PyLong_AsLongAndOverflow;
+extern PyLong_AsLongLongAndOverflow_t PY2_PyLong_AsLongLongAndOverflow;
+extern PyLong_AsUnsignedLongLong_t    PY2_PyLong_AsUnsignedLongLong;
+extern PyObject_IsTrue_t              PY2_PyObject_IsTrue;
+extern PyFloat_AsDouble_t             PY2_PyFloat_AsDouble;
+extern PyComplex_RealAsDouble_t       PY2_PyComplex_RealAsDouble;
+extern PyComplex_ImagAsDouble_t       PY2_PyComplex_ImagAsDouble;
+extern PyString_AsString_t            PY2_PyString_AsString;
+extern PyObject_Str_t                 PY2_PyObject_Str;
+extern PyRun_String_t                 PY2_PyRun_String;
+extern PyModule_GetDict_t             PY2_PyModule_GetDict;
+extern PyImport_AddModule_t           PY2_PyImport_AddModule;
+extern PyErr_Print_t                  PY2_PyErr_Print;
+extern PyDict_Next_t                  PY2_PyDict_Next;
+extern PyTuple_Size_t                 PY2_PyTuple_Size;
+extern Py_SetPythonHome_t             PY2_Py_SetPythonHome;
+extern PyErr_Fetch_t                  PY2_PyErr_Fetch;
+extern Py_NoSiteFlag_t                PY2_Py_NoSiteFlag;
 
 #endif // MARSHAL_UTILS_h__
