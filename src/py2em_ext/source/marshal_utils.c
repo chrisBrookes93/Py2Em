@@ -1,5 +1,39 @@
 #include "marshal_utils.h"
 
+/*
+* Handle to the Python2 binary
+*/
+void *pGlobPyHandle;
+
+/*
+* Python2 symbol pointers
+*/
+PyObject_GetIter_t             PY2_PyObject_GetIter;
+PyIter_Next_t                  PY2_PyIter_Next;
+PyList_Size_t                  PY2_PyList_Size;
+Py_Initialize_t                PY2_Py_Initialize;
+Py_Finalize_t                  PY2_Py_Finalize;
+PyLong_AsLongAndOverflow_t     PY2_PyLong_AsLongAndOverflow;
+PyLong_AsLongLongAndOverflow_t PY2_PyLong_AsLongLongAndOverflow;
+PyLong_AsUnsignedLongLong_t    PY2_PyLong_AsUnsignedLongLong;
+PyObject_IsTrue_t              PY2_PyObject_IsTrue;
+PyFloat_AsDouble_t             PY2_PyFloat_AsDouble;
+PyComplex_RealAsDouble_t       PY2_PyComplex_RealAsDouble;
+PyComplex_ImagAsDouble_t       PY2_PyComplex_ImagAsDouble;
+PyString_AsString_t            PY2_PyString_AsString;
+PyObject_Str_t                 PY2_PyObject_Str;
+PyRun_String_t                 PY2_PyRun_String;
+PyModule_GetDict_t             PY2_PyModule_GetDict;
+PyImport_AddModule_t           PY2_PyImport_AddModule;
+PyErr_Print_t                  PY2_PyErr_Print;
+PyDict_Next_t                  PY2_PyDict_Next;
+PyTuple_Size_t                 PY2_PyTuple_Size;
+Py_SetPythonHome_t             PY2_Py_SetPythonHome;
+PyErr_Fetch_t                  PY2_PyErr_Fetch;
+Py_NoSiteFlag_t                PY2_Py_NoSiteFlag;
+
+
+
 /**
 * Returns a bool indicating whether the Python2 interpreter is initialized.
 * This is done by checking that the Python2 binary is loaded.

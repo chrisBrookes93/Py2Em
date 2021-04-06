@@ -52,3 +52,20 @@ jobs:
           PY2_HOME: py2_env
       - name: Run the example script x64
         run: python3 utils\example.py C:\hostedtoolcache\windows\Python\2.7.18\x64
+
+  other_distros:
+    name: Test against other Linux distros
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install the Package
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install build
+          python3 -m build . --sdist
+      - name: Run the docker image
+        run: |
+          docker run -v $(pwd)/dist:/dist -v $(pwd)/test:/test chrisbrookes93/py2em_testing:buster /bin/bash -c "pip3 install /dist/* && pytest /test"

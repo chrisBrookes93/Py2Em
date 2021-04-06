@@ -347,3 +347,13 @@ class DivClass:
     def test_invalid_py2_binary(self):
         with self.assertRaisesRegex(RuntimeError, 'Failed to find Python2 binary at'):
             Py2Emulator.initialize(py2_home=self.py2_home, py2_binary_path='C:\\NOT_EXIST')
+
+    def test_import_stdlibs(self):
+        import_ls = ['import base64',
+                     'import os',
+                     'import sys',
+                     'from collections import OrderedDict']
+
+        with Py2Emulator(py2_home=self.py2_home) as py2em:
+            for stmt in import_ls:
+                py2em.exec(stmt)

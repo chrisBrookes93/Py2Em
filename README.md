@@ -28,9 +28,8 @@ Currently, only built-in types can be marshalled (i.e. ```int```, ```float```, `
 
 ## Environment Requirements
 
-Current official support is Ubuntu 20.04 and Windows 10. 
-It is likely that this library will work with other Linux distros and versions of Windows, but this has not yet been tested.
-#### Ubuntu 20.04
+Current official support is Ubuntu, Debian and Windows. 
+#### Ubuntu & Debian
 * Python3 installed 
 * Python2-dev installed (e.g. ```libpython2.7-dev```).
 * GCC
@@ -139,7 +138,7 @@ If you need to deal with characters outside of the ASCII range in your input the
 
 ```python
 import base64
-expected_val = 'µ, ж, з, к, л'
+expected_val = '<string with unicode characters>'
 b64_data = base64.b64encode(expected_val.encode('utf-8')).decode('utf-8')
 input_val = "a = base64.b64decode(u'{}')".format(b64_data)
 
