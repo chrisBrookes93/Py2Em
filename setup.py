@@ -21,6 +21,7 @@ setup(
     author='Chris Brookes',
     author_email='chris_b_856@hotmail.com',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     license='MIT',
     url='https://github.com/chrisBrookes93/Py2Em',
     python_requires='>=3',
