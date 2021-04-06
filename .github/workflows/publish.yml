@@ -21,7 +21,7 @@ jobs:
         pip install build
     - name: Build Package
       run: |
-        python -m build
+        python -m build . --sdist
     - name: Publish to PyPi
       uses: pypa/gh-action-pypi-publish@v1.4.1
       with:
